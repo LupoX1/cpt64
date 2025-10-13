@@ -1,0 +1,9 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define APP_NAME "@PROJECT_NAME@"
+#define APP_VERSION "@PROJECT_VERSION@"
+#define APP_DESCRIPTION "@PROJECT_DESCRIPTION@"
+#define APP_ID "@APP_ID@"
+
+#endif /* CONFIG_H */
