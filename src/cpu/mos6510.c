@@ -17,7 +17,7 @@ struct cpu_6510_t
   uint8_t x;
   uint8_t y;
   uint8_t sr;
-  uint8_t p;
+  uint8_t sp;
 };
 
 cpu_6510_t *create_cpu()
@@ -242,4 +242,21 @@ uint8_t *decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
     uint16_t new_address = address + cpu->y;
     // if( (address ^ new_address) & 0xFF00 != 0) cycles++;
     return &(ram[new_address]);
+}
+
+void dump(cpu_6510_t *cpu, FILE *file)
+{
+  char flags[9];
+  flags[0] = get_negative_flag(cpu)?'x':'.';
+  flags[1] = get_overflow_flag(cpu)?'x':'.';
+  flags[2] = '.';
+  flags[3] = get_break_flag(cpu)?'x':'.';
+  flags[4] = get_decimal_flag(cpu)?'x':'.';
+  flags[5] = get_interrupt_flag(cpu)?'x':'.';
+  flags[6] = get_zero_flag(cpu)?'x':'.';
+  flags[7] = get_carry_flag(cpu)?'x':'.';
+  flags[8] = 0;
+		  
+  fprintf(file, "AC:   %02X XR: %02X YR: %02X NV-BDIZC\n", cpu->a, cpu->x, cpu->y);
+  fprintf(file, "PC: %04X SP: %02X SR: %02X %s\n\n", cpu->pc, cpu->sp,cpu->sr, flags);
 }

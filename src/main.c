@@ -50,6 +50,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 #include <stdio.h>
 
+#include "c64_core.h"
+
 int main(int argc, char* argv[]) {
     printf("=== %s ===\n", APP_NAME);
     printf("Version: %s\n", APP_VERSION);
@@ -59,12 +61,19 @@ int main(int argc, char* argv[]) {
     // Placeholder per logica senza SDL
     printf("Running without SDL3 support...\n");
 
+    C64_Core *core = c64_core_create();
+    c64_core_reset(core);
+
     int c = 0;
     while(1)
     {
       c = getchar();
       if(c == 27) break;
     }
+
+    dump_data(core);
+
+    c64_core_destroy(core);
 
     return 0;
 }

@@ -13,6 +13,8 @@ typedef struct
 
 typedef struct C64_Core C64_Core;
 
+void dump_data(C64_Core *core);
+
 C64_Core *c64_core_create(void);
 void c64_core_destroy(C64_Core *core);
 bool c64_core_step(C64_Core *core);

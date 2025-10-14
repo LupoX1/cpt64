@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "memory.h"
 
@@ -64,5 +65,7 @@ int8_t  *decode_address_relative(cpu_6510_t *cpu, memory_t ram);
 uint8_t *decode_address_indirect(cpu_6510_t *cpu, memory_t ram);
 uint8_t *decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram);
 uint8_t *decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram);
+
+void dump(cpu_6510_t *cpu, FILE *file);
 
 #endif // CPU_H
