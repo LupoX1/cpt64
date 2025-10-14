@@ -9,4 +9,6 @@ void f90(cpu_6510_t *cpu, memory_t ram)
         uint16_t pc = read_program_counter(cpu);
         write_program_counter(cpu, pc + *offset);
     }
+
+    increment_cycles(cpu, 2);
 }

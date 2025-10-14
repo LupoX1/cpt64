@@ -64,11 +64,9 @@ int main(int argc, char* argv[]) {
     C64_Core *core = c64_core_create();
     c64_core_reset(core);
 
-    int c = 0;
-    while(1)
+    for(uint8_t i = 0; i<10; i++)
     {
-      c = getchar();
-      if(c == 27) break;
+      c64_core_step(core);
     }
 
     dump_data(core);

@@ -13,10 +13,12 @@ void f24(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_zeropage(cpu, ram);
     bit(cpu, *address);
+    increment_cycles(cpu, 3);
 }
 
 void f2C(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_absolute(cpu, ram);
     bit(cpu, *address);
+    increment_cycles(cpu, 4);
 }

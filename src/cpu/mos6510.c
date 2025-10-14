@@ -12,12 +12,16 @@
 
 struct cpu_6510_t
 {
+  uint64_t cycles;
   uint16_t pc;  
   uint8_t a;
   uint8_t x;
   uint8_t y;
   uint8_t sr;
   uint8_t sp;
+  bool reset;
+  bool nmi;
+  bool irq;  
 };
 
 cpu_6510_t *create_cpu()
@@ -114,6 +118,17 @@ void write_yr(cpu_6510_t *cpu, uint8_t value)
     cpu->y = value;
 }
 
+uint8_t read_sp(cpu_6510_t *cpu)
+{
+    return cpu->sp;
+}
+
+void write_sp(cpu_6510_t *cpu, uint8_t value)
+{
+    cpu->sp = value;
+}
+
+
 uint16_t read_program_counter(cpu_6510_t *cpu)
 {
     return cpu->pc;
@@ -122,6 +137,16 @@ uint16_t read_program_counter(cpu_6510_t *cpu)
 void write_program_counter(cpu_6510_t *cpu, uint16_t value)
 {
     cpu->pc = value;
+}
+
+uint64_t read_cycles(cpu_6510_t *cpu)
+{
+    return cpu->cycles;
+}
+
+void increment_cycles(cpu_6510_t *cpu, uint8_t value)
+{
+    cpu->cycles += value;
 }
 
 uint8_t fetch_instruction(cpu_6510_t *cpu, memory_t ram)
@@ -171,7 +196,7 @@ uint8_t *decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram)
     uint8_t high_addr = ram[pc + 1];
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->x;
-    // if( (address ^ new_address) & 0xFF00 != 0) cycles++;
+    if( (address ^ new_address) & 0xFF00 != 0) cpu->cycles++;
     return &ram[new_address];
 }
 
@@ -183,7 +208,7 @@ uint8_t *decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
     uint8_t high_addr = ram[pc + 1];
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->y;
-    // if( (address ^ new_address) & 0xFF00 != 0) cycles++;
+    if( (address ^ new_address) & 0xFF00 != 0) cpu->cycles++;
     return &ram[new_address];
 }
 
@@ -240,11 +265,11 @@ uint8_t *decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
     uint8_t high_addr = ram[zp_addr + 1];
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->y;
-    // if( (address ^ new_address) & 0xFF00 != 0) cycles++;
+    if( (address ^ new_address) & 0xFF00 != 0) cpu->cycles++;
     return &(ram[new_address]);
 }
 
-void dump(cpu_6510_t *cpu, FILE *file)
+void dump_cpu(cpu_6510_t *cpu, FILE *file)
 {
   char flags[9];
   flags[0] = get_negative_flag(cpu)?'x':'.';

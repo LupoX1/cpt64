@@ -12,8 +12,8 @@ struct C64_Core
   uint8_t basic[0x2000];
   uint8_t kernal[0x2000];
   uint8_t chars[0x1000];
-  cpu_6510_t *cpu;
   C64_Framebuffer framebuffer;
+  cpu_6510_t *cpu;
 };
 
 void load_data(char *path,uint8_t *location, size_t size)
@@ -34,44 +34,9 @@ void dump_data(C64_Core *core)
   FILE *file = fopen("./dump.txt", "w+");
   if(!file) return;
 
-  dump(core->cpu, file);
-
-  fprintf(file, "      00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F                   \n");
-
-  char buffer[75];
-  for(uint32_t i = 0; i <= 0xFFFF; i+= 16)
-  {
-    int pos = 0;
-
-    pos += snprintf( buffer + pos, sizeof(buffer) - pos, "%04X  ", i);
-    for(uint16_t j = 0; j<8; j++)
-    {
-      pos += snprintf( buffer + pos, sizeof(buffer) - pos, "%02X ", core->ram[i+j]);
-    }
-    pos += snprintf( buffer + pos, sizeof(buffer) - pos, " ");
-    for(uint16_t j = 8; j<16; j++)
-    {
-       pos += snprintf( buffer + pos, sizeof(buffer) - pos, "%02X ", core->ram[i+j]);
-    }
-
-    pos += snprintf( buffer + pos, sizeof(buffer) - pos, " ");
-    for(uint16_t j = 0; j<8; j++)
-    {
-       char c = core->ram[i+j];
-       if(c < 32 || c > 126) c = '.'; 
-       pos += snprintf( buffer + pos, sizeof(buffer) - pos, "%c", c);
-    }
-    pos += snprintf( buffer + pos, sizeof(buffer) - pos, " ");
-    for(uint16_t j = 8; j<16; j++)
-    {
-       char c = core->ram[i+j];
-       if(c < 32 || c > 126) c = '.';
-       pos += snprintf( buffer + pos, sizeof(buffer) - pos, "%c", c);
-    }
-    pos += snprintf( buffer + pos, sizeof(buffer) - pos, "\n");
-    fputs(buffer, file);
-  }
-
+  dump_cpu(core->cpu, file);
+  dump_memory(core->ram, file);
+  
   fclose(file);
 }
 
@@ -100,13 +65,12 @@ void c64_core_load_roms(C64_Core *core)
 
 void c64_core_reset(C64_Core *core)
 {
+  c64_core_load_roms(core);
+
   uint8_t pcl = read(core->ram, 0xFFFC);
   uint8_t pch = read(core->ram, 0xFFFD);
   uint16_t pc = pch << 8 | pcl;
   write_program_counter(core->cpu, pc);
-
-  
-  c64_core_load_roms(core);
 }
 
 bool c64_core_step(C64_Core *core)

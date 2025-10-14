@@ -12,28 +12,33 @@ void f06(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_zeropage(cpu, ram);
     asl(cpu, address);
+    increment_cycles(cpu, 5);
 }
 
 void f0A(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_accumulator(cpu, ram);
     asl(cpu, address);
+    increment_cycles(cpu, 2);
 }
 
 void f0E(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_absolute(cpu, ram);
     asl(cpu, address);
+    increment_cycles(cpu, 6);
 }
 
 void f16(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_zeropage_x(cpu, ram);
     asl(cpu, address);
+    increment_cycles(cpu, 6);
 }
 
 void f1E(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_absolute_x(cpu, ram);
     asl(cpu, address);
+    increment_cycles(cpu, 7);
 }
