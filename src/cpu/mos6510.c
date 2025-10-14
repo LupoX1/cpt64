@@ -9,6 +9,12 @@
 #include "opcodes/bcs.h"
 #include "opcodes/beq.h"
 #include "opcodes/bit.h"
+#include "opcodes/bmi.h"
+#include "opcodes/bne.h"
+#include "opcodes/bpl.h"
+#include "opcodes/brk.h"
+#include "opcodes/bvc.h"
+#include "opcodes/bvs.h"
 
 struct cpu_6510_t
 {
@@ -42,20 +48,20 @@ void bad(cpu_6510_t *cpu, memory_t ram)
 
 instruction_t instruction_set[256] = {
 //    0x00  0x01  0x02  0x03  0x04  0x05  0x06  0x07  0x08  0x09  0x0A  0x0B  0x0C  0x0D  0x0E  0x0F 
-/*0*/ &bad, &bad, &bad, &bad, &bad, &bad, &f06, &bad, &bad, &bad, &f0A, &bad, &bad, &bad, &f0E, &bad,
-/*1*/ &bad, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
+/*0*/ &f00, &bad, &bad, &bad, &bad, &bad, &f06, &bad, &bad, &bad, &f0A, &bad, &bad, &bad, &f0E, &bad,
+/*1*/ &f10, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
 /*2*/ &bad, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &bad, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
-/*3*/ &bad, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
+/*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
 /*4*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*5*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+/*5*/ &f50, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &bad, &f6D, &bad, &bad,
-/*7*/ &bad, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
+/*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
 /*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*A*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*B*/ &fB0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*C*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*D*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+/*D*/ &fD0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*E*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad};
 
