@@ -1,13 +1,38 @@
-#include "mos6510.h"
-#include "adc.h"
-#include "and.h"
-#include "asl.h"
-#include "bcc.h"
-#include "bcs.h"
-#include "beq.h"
-#include "bit.h"
+#include <stddef.h>
+#include <stdlib.h>
 
-void bad(Mos6510 *cpu, Ram ram)
+#include "cpu.h"
+#include "opcodes/adc.h"
+#include "opcodes/and.h"
+#include "opcodes/asl.h"
+#include "opcodes/bcc.h"
+#include "opcodes/bcs.h"
+#include "opcodes/beq.h"
+#include "opcodes/bit.h"
+
+struct cpu_6510_t
+{
+  uint16_t pc;  
+  uint8_t a;
+  uint8_t x;
+  uint8_t y;
+  uint8_t sr;
+  uint8_t p;
+};
+
+cpu_6510_t *create_cpu()
+{
+  cpu_6510_t *cpu = malloc(sizeof(cpu_6510_t));
+  if(cpu) return cpu;
+  return NULL;
+}
+
+void destroy_cpu(cpu_6510_t *cpu)
+{
+  if(cpu) free(cpu);
+}
+
+void bad(cpu_6510_t *cpu, memory_t ram)
 {
 }
 
@@ -30,7 +55,7 @@ instruction_t instruction_set[256] = {
 /*E*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad};
 
-void set_flag(Mos6510 *cpu, uint8_t flag, bool value)
+void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
 {
     if (value)
         cpu->sr = cpu->sr | flag;
@@ -38,41 +63,68 @@ void set_flag(Mos6510 *cpu, uint8_t flag, bool value)
         cpu->sr = cpu->sr & ~flag;
 }
 
-bool get_flag(Mos6510 *cpu, uint8_t flag)
+bool get_flag(cpu_6510_t *cpu, uint8_t flag)
 {
     return cpu->sr & flag;
 }
 
-void set_carry_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_C, value); }
-void set_zero_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_Z, value); }
-void set_interrupt_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_I, value); }
-void set_decimal_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_D, value); }
-void set_break_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_B, value); }
-void set_overflow_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_V, value); }
-void set_negative_flag(Mos6510 *cpu, bool value) { set_flag(cpu, FLAG_N, value); }
+void set_carry_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_C, value); }
+void set_zero_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_Z, value); }
+void set_interrupt_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_I, value); }
+void set_decimal_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_D, value); }
+void set_break_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_B, value); }
+void set_overflow_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_V, value); }
+void set_negative_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_N, value); }
 
-bool get_carry_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_C); }
-bool get_zero_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_Z); }
-bool get_interrupt_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_I); }
-bool get_decimal_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_D); }
-bool get_break_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_B); }
-bool get_overflow_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_V); }
-bool get_negative_flag(Mos6510 *cpu) { return get_flag(cpu, FLAG_N); }
+bool get_carry_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_C); }
+bool get_zero_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_Z); }
+bool get_interrupt_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_I); }
+bool get_decimal_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_D); }
+bool get_break_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_B); }
+bool get_overflow_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_V); }
+bool get_negative_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_N); }
 
-uint16_t read_program_counter(Mos6510 *cpu)
+uint8_t read_accumulator(cpu_6510_t *cpu)
 {
-    uint16_t pch = cpu->pch;
-    uint16_t pcl = cpu->pcl;
-    return pch << 8 | pcl;
+    return cpu->a;
 }
 
-void write_program_counter(Mos6510 *cpu, uint16_t value)
+void write_accumulator(cpu_6510_t *cpu, uint8_t value)
 {
-    cpu->pch = value >> 8;
-    cpu->pcl = value & 0x00FF;
+    cpu->a = value;
 }
 
-uint8_t fetch_instruction(Mos6510 *cpu, Ram ram)
+uint8_t read_xr(cpu_6510_t *cpu)
+{
+    return cpu->x;
+}
+
+void write_xr(cpu_6510_t *cpu, uint8_t value)
+{
+    cpu->x = value;
+}
+
+uint8_t read_yr(cpu_6510_t *cpu)
+{
+    return cpu->y;
+}
+
+void write_yr(cpu_6510_t *cpu, uint8_t value)
+{
+    cpu->y = value;
+}
+
+uint16_t read_program_counter(cpu_6510_t *cpu)
+{
+    return cpu->pc;
+}
+
+void write_program_counter(cpu_6510_t *cpu, uint16_t value)
+{
+    cpu->pc = value;
+}
+
+uint8_t fetch_instruction(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);
@@ -84,24 +136,24 @@ instruction_t decode_instruction(uint8_t opcode)
     return instruction_set[opcode];
 }
 
-uint8_t *decode_address_implied(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_implied(cpu_6510_t *cpu, memory_t ram)
 {
     return NULL;
 }
 
-uint8_t *decode_address_accumulator(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_accumulator(cpu_6510_t *cpu, memory_t ram)
 {
     return &cpu->a;
 }
 
-uint8_t *decode_address_immediate(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_immediate(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);
     return &ram[pc];
 }
 
-uint8_t *decode_address_absolute(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_absolute(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 2);
@@ -111,7 +163,7 @@ uint8_t *decode_address_absolute(Mos6510 *cpu, Ram ram)
     return &ram[address];
 }
 
-uint8_t *decode_address_absolute_x(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 2);
@@ -123,7 +175,7 @@ uint8_t *decode_address_absolute_x(Mos6510 *cpu, Ram ram)
     return &ram[new_address];
 }
 
-uint8_t *decode_address_absolute_y(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 2);
@@ -135,7 +187,7 @@ uint8_t *decode_address_absolute_y(Mos6510 *cpu, Ram ram)
     return &ram[new_address];
 }
 
-uint8_t *decode_address_zeropage(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_zeropage(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);
@@ -143,7 +195,7 @@ uint8_t *decode_address_zeropage(Mos6510 *cpu, Ram ram)
     return &ram[zp_addr];
 }
 
-uint8_t *decode_address_zeropage_x(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_zeropage_x(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);
@@ -151,24 +203,24 @@ uint8_t *decode_address_zeropage_x(Mos6510 *cpu, Ram ram)
     return &ram[zp_addr];
 }
 
-uint8_t *decode_address_zeropage_y(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_zeropage_y(cpu_6510_t *cpu, memory_t ram)
 {
     return NULL;
 }
 
-int8_t *decode_address_relative(Mos6510 *cpu, Ram ram)
+int8_t *decode_address_relative(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);
     return (int8_t*)&ram[pc];
 }
 
-uint8_t *decode_address_indirect(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
 {
     return NULL;
 }
 
-uint8_t *decode_address_indirect_x(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);
@@ -179,7 +231,7 @@ uint8_t *decode_address_indirect_x(Mos6510 *cpu, Ram ram)
     return &ram[address];
 }
 
-uint8_t *decode_address_indirect_y(Mos6510 *cpu, Ram ram)
+uint8_t *decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t pc = read_program_counter(cpu);
     write_program_counter(cpu, pc + 1);

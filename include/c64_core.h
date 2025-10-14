@@ -1,7 +1,15 @@
 #ifndef C64_CORE_H
 #define C64_CORE_H
 
-#include "c64_types.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include "config.h"
+
+typedef struct
+{
+  uint8_t data[C64_FRAME_BUFFER_SIZE];
+  bool dirty;
+} C64_Framebuffer;
 
 typedef struct C64_Core C64_Core;
 

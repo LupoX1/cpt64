@@ -1,6 +1,6 @@
 #include "beq.h"
 
-void fF0(Mos6510 *cpu, Ram ram)
+void fF0(cpu_6510_t *cpu, memory_t ram)
 {
     int8_t *offset = decode_address_relative(cpu, ram);
 

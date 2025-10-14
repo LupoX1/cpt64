@@ -1,12 +1,12 @@
 #ifndef ASL_H
 #define ASL_H
 
-#include "mos6510.h"
+#include "cpu.h"
 
-void f06(Mos6510 *cpu, Ram ram);
-void f0A(Mos6510 *cpu, Ram ram);
-void f0E(Mos6510 *cpu, Ram ram);
-void f16(Mos6510 *cpu, Ram ram);
-void f1E(Mos6510 *cpu, Ram ram);
+void f06(cpu_6510_t *cpu, memory_t ram);
+void f0A(cpu_6510_t *cpu, memory_t ram);
+void f0E(cpu_6510_t *cpu, memory_t ram);
+void f16(cpu_6510_t *cpu, memory_t ram);
+void f1E(cpu_6510_t *cpu, memory_t ram);
 
 #endif // ASL_H

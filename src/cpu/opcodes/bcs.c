@@ -1,6 +1,6 @@
 #include "bcs.h"
 
-void fB0(Mos6510 *cpu, Ram ram)
+void fB0(cpu_6510_t *cpu, memory_t ram)
 {
     int8_t *offset = decode_address_relative(cpu, ram);
 

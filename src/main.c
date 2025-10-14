@@ -48,6 +48,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 #else
 
+#include <stdio.h>
+
 int main(int argc, char* argv[]) {
     printf("=== %s ===\n", APP_NAME);
     printf("Version: %s\n", APP_VERSION);
@@ -56,7 +58,14 @@ int main(int argc, char* argv[]) {
     
     // Placeholder per logica senza SDL
     printf("Running without SDL3 support...\n");
-    
+
+    int c = 0;
+    while(1)
+    {
+      c = getchar();
+      if(c == 27) break;
+    }
+
     return 0;
 }
 

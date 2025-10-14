@@ -1,6 +1,6 @@
 #include "bcc.h"
 
-void f90(Mos6510 *cpu, Ram ram)
+void f90(cpu_6510_t *cpu, memory_t ram)
 {
     int8_t *offset = decode_address_relative(cpu, ram);
 

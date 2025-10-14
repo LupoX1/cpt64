@@ -1,8 +1,8 @@
 #ifndef BCC_H
 #define BCC_H
 
-#include "mos6510.h"
+#include "cpu.h"
 
-void f90(Mos6510 *cpu, Ram ram);
+void f90(cpu_6510_t *cpu, memory_t ram);
 
 #endif // BCC_H

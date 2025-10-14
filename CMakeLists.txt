@@ -78,7 +78,7 @@ endif()
 # ============================================================================
 
 set(COMMON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
-include_directories(${COMMON_INCLUDE_DIR})
+include_directories(${COMMON_INCLUDE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # ============================================================================
 # Struttura dei moduli

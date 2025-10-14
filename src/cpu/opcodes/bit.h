@@ -1,9 +1,9 @@
 #ifndef BIT_H
 #define BIT_H
 
-#include "mos6510.h"
+#include "cpu.h"
 
-void f24(Mos6510 *cpu, Ram ram);
-void f2C(Mos6510 *cpu, Ram ram);
+void f24(cpu_6510_t *cpu, memory_t ram);
+void f2C(cpu_6510_t *cpu, memory_t ram);
 
 #endif // BIT_H

@@ -1,55 +1,56 @@
 #include "and.h"
 
-void and(Mos6510 *cpu, uint8_t value)
+void and(cpu_6510_t *cpu, uint8_t value)
 {
-    cpu->a = cpu->a & value;
-    set_zero_flag(cpu, cpu->a == 0);
-    set_negative_flag(cpu, (cpu->a & 0x80) != 0);
+    uint8_t result = read_accumulator(cpu) & value;
+    write_accumulator(cpu, result);
+    set_zero_flag(cpu, result == 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
 }
 
-void f21(Mos6510 *cpu, Ram ram)
+void f21(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_indirect_x(cpu, ram);
     and(cpu, *address);
 }
 
-void f25(Mos6510 *cpu, Ram ram)
+void f25(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_zeropage(cpu, ram);
     and(cpu, *address);
 }
 
-void f29(Mos6510 *cpu, Ram ram)
+void f29(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_immediate(cpu, ram);
     and(cpu, *address);
 }
 
-void f2D(Mos6510 *cpu, Ram ram)
+void f2D(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_absolute(cpu, ram);
     and(cpu, *address);
 }
 
-void f31(Mos6510 *cpu, Ram ram)
+void f31(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_indirect_y(cpu, ram);
     and(cpu, *address);
 }
 
-void f35(Mos6510 *cpu, Ram ram)
+void f35(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_zeropage_x(cpu, ram);
     and(cpu, *address);
 }
 
-void f39(Mos6510 *cpu, Ram ram)
+void f39(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_absolute_y(cpu, ram);
     and(cpu, *address);
 }
 
-void f3D(Mos6510 *cpu, Ram ram)
+void f3D(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t *address = decode_address_absolute_x(cpu, ram);
     and(cpu, *address);
