@@ -1,5 +1,5 @@
-#ifndef DEC_H
-#define DEC_H
+#ifndef INC_H
+#define INC_H
 
 #include "cpu.h"
 
@@ -8,4 +8,4 @@ void fEE(cpu_6510_t *cpu, memory_t ram);
 void fF6(cpu_6510_t *cpu, memory_t ram);
 void fFE(cpu_6510_t *cpu, memory_t ram);
 
-#endif // DEC_H
+#endif // INC_H

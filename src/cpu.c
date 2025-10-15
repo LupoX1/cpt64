@@ -29,6 +29,7 @@
 #include "opcodes/inc.h"
 #include "opcodes/inx.h"
 #include "opcodes/iny.h"
+#include "opcodes/jmp.h"
 
 struct cpu_6510_t
 {
@@ -69,9 +70,9 @@ instruction_t instruction_set[256] = {
 /*1*/ &f10, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &f18, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
 /*2*/ &bad, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &bad, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
 /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
-/*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &bad, &bad, &bad, &f49, &bad, &bad, &bad, &f4D, &bad, &bad,
+/*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &bad, &bad, &bad, &f49, &bad, &bad, &f4C, &f4D, &bad, &bad,
 /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &bad, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &bad, &bad,
-/*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &bad, &f6D, &bad, &bad,
+/*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &f6C, &f6D, &bad, &bad,
 /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
 /*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
 /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
@@ -278,7 +279,13 @@ int8_t *decode_address_relative(cpu_6510_t *cpu, memory_t ram)
 
 uint8_t *decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
 {
-    return NULL;
+    uint16_t pc = read_program_counter(cpu);
+    write_program_counter(cpu, pc + 2);
+    uint8_t low_addr = ram[pc];
+    uint8_t high_addr = ram[pc + 1];
+    uint16_t address = high_addr << 8 | low_addr;
+    uint8_t real_address = ram[address];
+    return &ram[real_address];
 }
 
 uint8_t *decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)

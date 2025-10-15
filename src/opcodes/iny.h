@@ -1,8 +1,8 @@
-#ifndef DEY_H
-#define DEY_H
+#ifndef INY_H
+#define INY_H
 
 #include "cpu.h"
 
-void f88(cpu_6510_t *cpu, memory_t ram);
+void fC8(cpu_6510_t *cpu, memory_t ram);
 
-#endif // DEY_H
+#endif // INY_H

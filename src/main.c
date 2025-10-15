@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     C64_Core *core = c64_core_create();
     c64_core_reset(core);
 
-    for(uint8_t i = 0; i<10; i++)
+    for(uint8_t i = 0; i<100; i++)
     {
       c64_core_step(core);
     }
