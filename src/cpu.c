@@ -26,6 +26,9 @@
 #include "opcodes/dex.h"
 #include "opcodes/dey.h"
 #include "opcodes/eor.h"
+#include "opcodes/inc.h"
+#include "opcodes/inx.h"
+#include "opcodes/iny.h"
 
 struct cpu_6510_t
 {
@@ -74,10 +77,10 @@ instruction_t instruction_set[256] = {
 /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*A*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*B*/ &fB0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fB8, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &bad, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
+/*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
 /*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
-/*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fEC, &bad, &bad, &bad,
-/*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad};
+/*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &fE6, &bad, &fE8, &bad, &bad, &bad, &fEC, &bad, &fEE, &bad,
+/*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &fF6, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fFE, &bad};
 
 void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
 {

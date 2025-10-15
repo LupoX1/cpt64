@@ -1,4 +1,4 @@
-#include "../memory.h"
+#include "memory.h"
 
 uint8_t read(memory_t memory, uint16_t address)
 {
