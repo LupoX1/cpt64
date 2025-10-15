@@ -47,6 +47,8 @@ uint8_t read_yr(cpu_6510_t *cpu);
 void write_yr(cpu_6510_t *cpu, uint8_t value);
 uint8_t read_sp(cpu_6510_t *cpu);
 void write_sp(cpu_6510_t *cpu, uint8_t value);
+uint8_t read_sr(cpu_6510_t *cpu);
+void write_sr(cpu_6510_t *cpu, uint8_t value);
 uint16_t read_program_counter(cpu_6510_t *cpu);
 void write_program_counter(cpu_6510_t *cpu, uint16_t value);
 

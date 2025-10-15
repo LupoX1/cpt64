@@ -145,6 +145,15 @@ void write_sp(cpu_6510_t *cpu, uint8_t value)
     cpu->sp = value;
 }
 
+uint8_t read_sr(cpu_6510_t *cpu)
+{
+    return cpu->sr;
+}
+
+void write_sr(cpu_6510_t *cpu, uint8_t value)
+{
+    cpu->sr = value;
+}
 
 uint16_t read_program_counter(cpu_6510_t *cpu)
 {
