@@ -22,7 +22,10 @@
 #include "opcodes/cmp.h"
 #include "opcodes/cpx.h"
 #include "opcodes/cpy.h"
-
+#include "opcodes/dec.h"
+#include "opcodes/dex.h"
+#include "opcodes/dey.h"
+#include "opcodes/eor.h"
 
 struct cpu_6510_t
 {
@@ -63,16 +66,16 @@ instruction_t instruction_set[256] = {
 /*1*/ &f10, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &f18, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
 /*2*/ &bad, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &bad, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
 /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
-/*4*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*5*/ &f50, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f58, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+/*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &bad, &bad, &bad, &f49, &bad, &bad, &bad, &f4D, &bad, &bad,
+/*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &bad, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &bad, &bad,
 /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &bad, &f6D, &bad, &bad,
 /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
-/*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+/*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
 /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*A*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
 /*B*/ &fB0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fB8, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &bad, &bad, &bad, &fC9, &bad, &bad, &fCC, &fCD, &bad, &bad,
-/*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &bad, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &bad, &bad,
+/*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &bad, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
+/*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
 /*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fEC, &bad, &bad, &bad,
 /*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad};
 
