@@ -30,58 +30,61 @@
 #include "opcodes/inx.h"
 #include "opcodes/iny.h"
 #include "opcodes/jmp.h"
+#include "opcodes/jsr.h"
 
 struct cpu_6510_t
 {
-  uint64_t cycles;
-  uint16_t pc;  
-  uint8_t a;
-  uint8_t x;
-  uint8_t y;
-  uint8_t sr;
-  uint8_t sp;
-  bool reset;
-  bool nmi;
-  bool irq;  
+    uint64_t cycles;
+    uint16_t pc;
+    uint8_t a;
+    uint8_t x;
+    uint8_t y;
+    uint8_t sr;
+    uint8_t sp;
+    bool reset;
+    bool nmi;
+    bool irq;
 };
 
 cpu_6510_t *create_cpu()
 {
-  cpu_6510_t *cpu = malloc(sizeof(cpu_6510_t));
-  if(cpu) return cpu;
-  return NULL;
+    cpu_6510_t *cpu = malloc(sizeof(cpu_6510_t));
+    if (cpu)
+        return cpu;
+    return NULL;
 }
 
 void destroy_cpu(cpu_6510_t *cpu)
 {
-  if(cpu) free(cpu);
+    if (cpu)
+        free(cpu);
 }
 
 void bad(cpu_6510_t *cpu, memory_t ram)
 {
-  uint16_t pc = read_program_counter(cpu) - 1;
-  uint8_t opcode = read(ram, pc);
-  printf("Bad Opcode: %02X @ %04X\n", opcode, pc);
+    uint16_t pc = read_program_counter(cpu) - 1;
+    uint8_t opcode = read(ram, pc);
+    printf("Bad Opcode: %02X @ %04X\n", opcode, pc);
 }
 
 instruction_t instruction_set[256] = {
-//    0x00  0x01  0x02  0x03  0x04  0x05  0x06  0x07  0x08  0x09  0x0A  0x0B  0x0C  0x0D  0x0E  0x0F 
-/*0*/ &f00, &bad, &bad, &bad, &bad, &bad, &f06, &bad, &bad, &bad, &f0A, &bad, &bad, &bad, &f0E, &bad,
-/*1*/ &f10, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &f18, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
-/*2*/ &bad, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &bad, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
-/*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
-/*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &bad, &bad, &bad, &f49, &bad, &bad, &f4C, &f4D, &bad, &bad,
-/*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &bad, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &bad, &bad,
-/*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &f6C, &f6D, &bad, &bad,
-/*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
-/*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
-/*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*A*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*B*/ &fB0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fB8, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-/*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
-/*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
-/*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &fE6, &bad, &fE8, &bad, &bad, &bad, &fEC, &bad, &fEE, &bad,
-/*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &fF6, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fFE, &bad};
+    //    0x00  0x01  0x02  0x03  0x04  0x05  0x06  0x07  0x08  0x09  0x0A  0x0B  0x0C  0x0D  0x0E  0x0F
+    /*0*/ &f00, &bad, &bad, &bad, &bad, &bad, &f06, &bad, &bad, &bad, &f0A, &bad, &bad, &bad, &f0E, &bad,
+    /*1*/ &f10, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &f18, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
+    /*2*/ &f20, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &bad, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
+    /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
+    /*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &bad, &bad, &bad, &f49, &bad, &bad, &f4C, &f4D, &bad, &bad,
+    /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &bad, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &bad, &bad,
+    /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &f6C, &f6D, &bad, &bad,
+    /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
+    /*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
+    /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+    /*A*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+    /*B*/ &fB0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fB8, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+    /*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
+    /*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
+    /*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &fE6, &bad, &fE8, &bad, &bad, &bad, &fEC, &bad, &fEE, &bad,
+    /*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &fF6, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fFE, &bad};
 
 void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
 {
@@ -172,6 +175,23 @@ void write_program_counter(cpu_6510_t *cpu, uint16_t value)
     cpu->pc = value;
 }
 
+void increment_program_counter(cpu_6510_t *cpu, uint16_t value)
+{
+    cpu->pc = cpu->pc + value;
+}
+
+void push(cpu_6510_t *cpu, memory_t ram, uint8_t value)
+{
+    ram[cpu->sp] = value;
+    cpu->sp = cpu->sp - 1;
+}
+
+uint8_t pop(cpu_6510_t *cpu, memory_t ram)
+{
+    cpu->sp = cpu->sp + 1;
+    return ram[cpu->sp];
+}
+
 uint64_t read_cycles(cpu_6510_t *cpu)
 {
     return cpu->cycles;
@@ -184,9 +204,7 @@ void increment_cycles(cpu_6510_t *cpu, uint8_t value)
 
 uint8_t fetch_instruction(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    return ram[pc];
+    return ram[cpu->pc];
 }
 
 instruction_t decode_instruction(uint8_t opcode)
@@ -194,137 +212,106 @@ instruction_t decode_instruction(uint8_t opcode)
     return instruction_set[opcode];
 }
 
-uint8_t *decode_address_implied(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_immediate(cpu_6510_t *cpu, memory_t ram)
 {
-    return NULL;
+    return cpu->pc + 1;
 }
 
-uint8_t *decode_address_accumulator(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_absolute(cpu_6510_t *cpu, memory_t ram)
 {
-    return &cpu->a;
+    uint8_t low_addr = ram[cpu->pc + 1];
+    uint8_t high_addr = ram[cpu->pc + 2];
+    return high_addr << 8 | low_addr;
 }
 
-uint8_t *decode_address_immediate(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    return &ram[pc];
-}
-
-uint8_t *decode_address_absolute(cpu_6510_t *cpu, memory_t ram)
-{
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 2);
-    uint8_t low_addr = ram[pc];
-    uint8_t high_addr = ram[pc + 1];
-    uint16_t address = high_addr << 8 | low_addr;
-    return &ram[address];
-}
-
-uint8_t *decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram)
-{
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 2);
-    uint8_t low_addr = ram[pc];
-    uint8_t high_addr = ram[pc + 1];
+    uint8_t low_addr = ram[cpu->pc + 1];
+    uint8_t high_addr = ram[cpu->pc + 2];
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->x;
-    if(( (address ^ new_address) & 0xFF00) != 0) cpu->cycles++;
-    return &ram[new_address];
+    if (((address ^ new_address) & 0xFF00) != 0)
+        cpu->cycles++;
+    return new_address;
 }
 
-uint8_t *decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 2);
-    uint8_t low_addr = ram[pc];
-    uint8_t high_addr = ram[pc + 1];
+    uint8_t low_addr = ram[cpu->pc + 1];
+    uint8_t high_addr = ram[cpu->pc + 2];
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->y;
-    if(( (address ^ new_address) & 0xFF00) != 0) cpu->cycles++;
-    return &ram[new_address];
+    if (((address ^ new_address) & 0xFF00) != 0)
+        cpu->cycles++;
+    return new_address;
 }
 
-uint8_t *decode_address_zeropage(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_zeropage(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    uint8_t zp_addr = ram[pc];
-    return &ram[zp_addr];
+    return (uint16_t)ram[cpu->pc + 1];
 }
 
-uint8_t *decode_address_zeropage_x(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_zeropage_x(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    uint8_t zp_addr = ram[pc] + cpu->x;
-    return &ram[zp_addr];
+    return (uint16_t)ram[cpu->pc + 1] + cpu->x;
 }
 
-uint8_t *decode_address_zeropage_y(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_zeropage_y(cpu_6510_t *cpu, memory_t ram)
 {
-    return NULL;
+    return (uint16_t)ram[cpu->pc + 1] + cpu->y;
 }
 
-int8_t *decode_address_relative(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_relative(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    int8_t *offset = (int8_t*)&ram[pc];
-
-    uint16_t new_address = pc + 1 + *offset;
-    if(( (pc ^ new_address) & 0xFF00) != 0) cpu->cycles++;
-    return offset;
+    int8_t offset = (int8_t)ram[cpu->pc + 1];
+    uint16_t address = cpu->pc + 2;
+    uint16_t new_address = address + offset;
+    if (((address ^ new_address) & 0xFF00) != 0)
+        cpu->cycles++;
+    return new_address;
 }
 
-uint8_t *decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 2);
-    uint8_t low_addr = ram[pc];
-    uint8_t high_addr = ram[pc + 1];
+    uint8_t low_addr = ram[cpu->pc + 1];
+    uint8_t high_addr = ram[cpu->pc + 2];
     uint16_t address = high_addr << 8 | low_addr;
-    uint8_t real_address = ram[address];
-    return &ram[real_address];
+    return ram[address + 1] << 8 | ram[address];
 }
 
-uint8_t *decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    uint8_t zp_addr = ram[pc];
+    uint16_t zp_addr = (uint16_t)ram[cpu->pc + 1];
     uint8_t low_addr = ram[zp_addr + cpu->x];
     uint8_t high_addr = ram[zp_addr + cpu->x + 1];
-    uint16_t address = high_addr << 8 | low_addr;
-    return &ram[address];
+    return high_addr << 8 | low_addr;
 }
 
-uint8_t *decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu);
-    write_program_counter(cpu, pc + 1);
-    uint8_t zp_addr = ram[pc];
+    uint16_t zp_addr = (uint16_t)ram[cpu->pc + 1];
     uint8_t low_addr = ram[zp_addr];
     uint8_t high_addr = ram[zp_addr + 1];
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->y;
-    if(( (address ^ new_address) & 0xFF00) != 0) cpu->cycles++;
-    return &(ram[new_address]);
+    if (((address ^ new_address) & 0xFF00) != 0)
+        cpu->cycles++;
+    return new_address;
 }
 
 void dump_cpu(cpu_6510_t *cpu, FILE *file)
 {
-  char flags[9];
-  flags[0] = get_negative_flag(cpu)?'x':'.';
-  flags[1] = get_overflow_flag(cpu)?'x':'.';
-  flags[2] = '.';
-  flags[3] = get_break_flag(cpu)?'x':'.';
-  flags[4] = get_decimal_flag(cpu)?'x':'.';
-  flags[5] = get_interrupt_flag(cpu)?'x':'.';
-  flags[6] = get_zero_flag(cpu)?'x':'.';
-  flags[7] = get_carry_flag(cpu)?'x':'.';
-  flags[8] = 0;
-  
-  fprintf(file, "AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
-  fprintf(file, "PC: %04X SP: %02X SR: %02X %s %lu\n\n", cpu->pc, cpu->sp,cpu->sr, flags, cpu->cycles);
+    char flags[9];
+    flags[0] = get_negative_flag(cpu) ? 'x' : '.';
+    flags[1] = get_overflow_flag(cpu) ? 'x' : '.';
+    flags[2] = '.';
+    flags[3] = get_break_flag(cpu) ? 'x' : '.';
+    flags[4] = get_decimal_flag(cpu) ? 'x' : '.';
+    flags[5] = get_interrupt_flag(cpu) ? 'x' : '.';
+    flags[6] = get_zero_flag(cpu) ? 'x' : '.';
+    flags[7] = get_carry_flag(cpu) ? 'x' : '.';
+    flags[8] = 0;
+
+    fprintf(file, "AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
+    fprintf(file, "PC: %04X SP: %02X SR: %02X %s %lu\n\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
 }

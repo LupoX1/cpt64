@@ -12,22 +12,26 @@ void cpy(cpu_6510_t *cpu, uint8_t value)
 
 void fC0(cpu_6510_t *cpu, memory_t ram)
 {
-  uint8_t *address = decode_address_immediate(cpu, ram);
-  cpy(cpu, *address);
+  uint16_t address = decode_address_immediate(cpu, ram);
+  cpy(cpu, ram[address]);
   increment_cycles(cpu, 2);
+    increment_program_counter(cpu, 2 );
+
 }
 
 void fC4(cpu_6510_t *cpu, memory_t ram)
 {
-   uint8_t *address = decode_address_zeropage(cpu, ram);
-   cpy(cpu, *address);
+   uint16_t address = decode_address_zeropage(cpu, ram);
+   cpy(cpu, ram[address]);
    increment_cycles(cpu, 3);
+  increment_program_counter(cpu, 2);
 }
 
 void fCC(cpu_6510_t *cpu, memory_t ram)
 {
-   uint8_t *address = decode_address_absolute(cpu, ram);
-   cpy(cpu, *address);
+   uint16_t address = decode_address_absolute(cpu, ram);
+   cpy(cpu, ram[address]);
    increment_cycles(cpu, 4);
+  increment_program_counter(cpu, 3);
 }
 

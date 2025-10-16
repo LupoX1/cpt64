@@ -11,14 +11,16 @@ void bit(cpu_6510_t *cpu, uint8_t value)
 
 void f24(cpu_6510_t *cpu, memory_t ram)
 {
-    uint8_t *address = decode_address_zeropage(cpu, ram);
-    bit(cpu, *address);
+    uint16_t address = decode_address_zeropage(cpu, ram);
+    bit(cpu, ram[address]);
     increment_cycles(cpu, 3);
+    increment_program_counter(cpu, 2);
 }
 
 void f2C(cpu_6510_t *cpu, memory_t ram)
 {
-    uint8_t *address = decode_address_absolute(cpu, ram);
-    bit(cpu, *address);
+    uint16_t address = decode_address_absolute(cpu, ram);
+    bit(cpu, ram[address]);
     increment_cycles(cpu, 4);
+    increment_program_counter(cpu, 3);
 }
