@@ -62,9 +62,10 @@ void destroy_cpu(cpu_6510_t *cpu)
 
 void bad(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t pc = read_program_counter(cpu) - 1;
+    uint16_t pc = read_program_counter(cpu);
     uint8_t opcode = read(ram, pc);
-    printf("Bad Opcode: %02X @ %04X\n", opcode, pc);
+    printf("BAD %02X @ %04X\n", opcode, pc);
+    increment_program_counter(cpu, 1);
 }
 
 instruction_t instruction_set[256] = {
