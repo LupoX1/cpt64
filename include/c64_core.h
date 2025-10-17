@@ -22,4 +22,6 @@ void c64_core_reset(C64_Core *core);
 
 C64_Framebuffer *get_c64_framebuffer(C64_Core *core);
 
+void c64_log_status(C64_Core *core);
+
 #endif // C64_CORE_H
