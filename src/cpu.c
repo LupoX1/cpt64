@@ -43,6 +43,21 @@
 #include "opcodes/plp.h"
 #include "opcodes/rol.h"
 #include "opcodes/ror.h"
+#include "opcodes/rti.h"
+#include "opcodes/rts.h"
+#include "opcodes/sbc.h"
+#include "opcodes/sec.h"
+#include "opcodes/sed.h"
+#include "opcodes/sei.h"
+#include "opcodes/sta.h"
+#include "opcodes/stx.h"
+#include "opcodes/sty.h"
+#include "opcodes/tax.h"
+#include "opcodes/tay.h"
+#include "opcodes/tsx.h"
+#include "opcodes/txa.h"
+#include "opcodes/txs.h"
+#include "opcodes/tya.h"
 
 struct cpu_6510_t
 {
@@ -85,19 +100,19 @@ instruction_t instruction_set[256] = {
     /*0*/ &f00, &f01, &bad, &bad, &bad, &f05, &f06, &bad, &f08, &f09, &f0A, &bad, &bad, &f0D, &f0E, &bad,
     /*1*/ &f10, &f11, &bad, &bad, &bad, &f15, &f16, &bad, &f18, &f19, &bad, &bad, &bad, &f1D, &f1E, &bad,
     /*2*/ &f20, &f21, &bad, &bad, &f24, &f25, &f26, &bad, &f28, &f29, &f2A, &bad, &f2C, &f2D, &f2E, &bad,
-    /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &f36, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &f3E, &bad,
-    /*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &f46, &bad, &f48, &f49, &f4A, &bad, &f4C, &f4D, &f4E, &bad,
+    /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &f36, &bad, &f38, &f39, &bad, &bad, &bad, &f3D, &f3E, &bad,
+    /*4*/ &f40, &f41, &bad, &bad, &bad, &f45, &f46, &bad, &f48, &f49, &f4A, &bad, &f4C, &f4D, &f4E, &bad,
     /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &f56, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &f5E, &bad,
-    /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &f66, &bad, &f68, &f69, &f6A, &bad, &f6C, &f6D, &f6E, &bad,
-    /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &f76, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &f7E, &bad,
-    /*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
-    /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-    /*A*/ &fA0, &fA1, &fA2, &bad, &fA4, &fA5, &fA6, &bad, &bad, &fA9, &bad, &bad, &fAC, &fAD, &fAE, &bad,
-    /*B*/ &fB0, &fB1, &bad, &bad, &fB4, &fB5, &fB6, &bad, &fB8, &fB9, &bad, &bad, &fBC, &fBD, &fBE, &bad,
+    /*6*/ &f60, &f61, &bad, &bad, &bad, &f65, &f66, &bad, &f68, &f69, &f6A, &bad, &f6C, &f6D, &f6E, &bad,
+    /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &f76, &bad, &f78, &f79, &bad, &bad, &bad, &f7D, &f7E, &bad,
+    /*8*/ &bad, &f81, &bad, &bad, &f84, &f85, &f86, &bad, &f88, &f89, &f8A, &bad, &f8C, &f8D, &f8E, &bad,
+    /*9*/ &f90, &f91, &bad, &bad, &f94, &f95, &f96, &bad, &f98, &f99, &f9A, &bad, &bad, &f9D, &bad, &bad,
+    /*A*/ &fA0, &fA1, &fA2, &bad, &fA4, &fA5, &fA6, &bad, &fA8, &fA9, &fAA, &bad, &fAC, &fAD, &fAE, &bad,
+    /*B*/ &fB0, &fB1, &bad, &bad, &fB4, &fB5, &fB6, &bad, &fB8, &fB9, &fBA, &bad, &fBC, &fBD, &fBE, &bad,
     /*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
     /*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
-    /*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &fE6, &bad, &fE8, &bad, &fEA, &bad, &fEC, &bad, &fEE, &bad,
-    /*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &fF6, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fFE, &bad};
+    /*E*/ &fE0, &fE1, &bad, &bad, &fE4, &fE5, &fE6, &bad, &fE8, &fE9, &fEA, &bad, &fEC, &fED, &fEE, &bad,
+    /*F*/ &fF0, &fF1, &bad, &bad, &bad, &fF5, &fF6, &bad, &fF8, &fF9, &bad, &bad, &bad, &fFD, &fFE, &bad};
 
 void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
 {
