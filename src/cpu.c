@@ -41,6 +41,8 @@
 #include "opcodes/php.h"
 #include "opcodes/pla.h"
 #include "opcodes/plp.h"
+#include "opcodes/rol.h"
+#include "opcodes/ror.h"
 
 struct cpu_6510_t
 {
@@ -82,12 +84,12 @@ instruction_t instruction_set[256] = {
     //    0x00  0x01  0x02  0x03  0x04  0x05  0x06  0x07  0x08  0x09  0x0A  0x0B  0x0C  0x0D  0x0E  0x0F
     /*0*/ &f00, &f01, &bad, &bad, &bad, &f05, &f06, &bad, &f08, &f09, &f0A, &bad, &bad, &f0D, &f0E, &bad,
     /*1*/ &f10, &f11, &bad, &bad, &bad, &f15, &f16, &bad, &f18, &f19, &bad, &bad, &bad, &f1D, &f1E, &bad,
-    /*2*/ &f20, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &f28, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
-    /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
+    /*2*/ &f20, &f21, &bad, &bad, &f24, &f25, &f26, &bad, &f28, &f29, &f2A, &bad, &f2C, &f2D, &f2E, &bad,
+    /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &f36, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &f3E, &bad,
     /*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &f46, &bad, &f48, &f49, &f4A, &bad, &f4C, &f4D, &f4E, &bad,
     /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &f56, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &f5E, &bad,
-    /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &f68, &f69, &bad, &bad, &f6C, &f6D, &bad, &bad,
-    /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
+    /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &f66, &bad, &f68, &f69, &f6A, &bad, &f6C, &f6D, &f6E, &bad,
+    /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &f76, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &f7E, &bad,
     /*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
     /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
     /*A*/ &fA0, &fA1, &fA2, &bad, &fA4, &fA5, &fA6, &bad, &bad, &fA9, &bad, &bad, &fAC, &fAD, &fAE, &bad,
