@@ -2,14 +2,30 @@
 
 void sbc(cpu_6510_t *cpu, uint8_t value)
 {
+    bool decimal_mode = get_decimal_flag(cpu);
     bool carry = get_carry_flag(cpu);
     uint8_t acc = read_accumulator(cpu);
-    uint16_t result = acc - value - carry ? 1 : 0;
-    write_accumulator(cpu, result & 0x00FF);
-    set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & 0x80) != 0);
-    set_zero_flag(cpu, result == 0);
-    set_carry_flag(cpu, result > 0x00FF);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    if (decimal_mode)
+    {
+        uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
+        uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
+        uint8_t c = acc - value - carry ? 1 : 0;
+        uint8_t result = c < 0 ? c + 100 : c;
+
+        write_accumulator(cpu, result);
+        set_zero_flag(cpu, result == 0);
+        set_carry_flag(cpu, c < 0);
+        set_negative_flag(cpu, 0);
+    }
+    else
+    {
+        uint16_t result = acc - value - carry ? 1 : 0;
+        write_accumulator(cpu, result & 0x00FF);
+        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & 0x80) != 0);
+        set_zero_flag(cpu, result == 0);
+        set_carry_flag(cpu, result > 0x00FF);
+        set_negative_flag(cpu, (result & 0x80) != 0);
+    }
 }
 
 void fE1(cpu_6510_t *cpu, memory_t ram)
