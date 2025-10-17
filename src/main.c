@@ -58,7 +58,6 @@ int main(int argc, char* argv[]) {
     printf("Description: %s\n", APP_DESCRIPTION);
     printf("\n--- Build without SDL3 ---\n");
     
-    // Placeholder per logica senza SDL
     printf("Running without SDL3 support...\n");
 
     C64_Core *core = c64_core_create();

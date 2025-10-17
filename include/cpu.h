@@ -62,8 +62,6 @@ void increment_cycles(cpu_6510_t *cpu, uint8_t value);
 uint8_t fetch_instruction(cpu_6510_t *cpu, memory_t ram);
 instruction_t decode_instruction(uint8_t opcode);
 
-uint16_t decode_address_implied(cpu_6510_t *cpu, memory_t ram);
-uint16_t decode_address_accumulator(cpu_6510_t *cpu, memory_t ram);
 uint16_t decode_address_immediate(cpu_6510_t *cpu, memory_t ram);
 uint16_t decode_address_absolute(cpu_6510_t *cpu, memory_t ram);
 uint16_t decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram);

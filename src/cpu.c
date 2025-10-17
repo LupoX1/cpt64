@@ -31,6 +31,11 @@
 #include "opcodes/iny.h"
 #include "opcodes/jmp.h"
 #include "opcodes/jsr.h"
+#include "opcodes/lda.h"
+#include "opcodes/ldx.h"
+#include "opcodes/ldy.h"
+#include "opcodes/lsr.h"
+#include "opcodes/nop.h"
 
 struct cpu_6510_t
 {
@@ -74,17 +79,17 @@ instruction_t instruction_set[256] = {
     /*1*/ &f10, &bad, &bad, &bad, &bad, &bad, &f16, &bad, &f18, &bad, &bad, &bad, &bad, &bad, &f1E, &bad,
     /*2*/ &f20, &f21, &bad, &bad, &f24, &f25, &bad, &bad, &bad, &f29, &bad, &bad, &f2C, &f2D, &bad, &bad,
     /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &bad, &bad, &bad, &f39, &bad, &bad, &bad, &f3D, &bad, &bad,
-    /*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &bad, &bad, &bad, &f49, &bad, &bad, &f4C, &f4D, &bad, &bad,
-    /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &bad, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &bad, &bad,
+    /*4*/ &bad, &f41, &bad, &bad, &bad, &f45, &f46, &bad, &bad, &f49, &f4A, &bad, &f4C, &f4D, &f4E, &bad,
+    /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &f56, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &f5E, &bad,
     /*6*/ &bad, &f61, &bad, &bad, &bad, &f65, &bad, &bad, &bad, &f69, &bad, &bad, &f6C, &f6D, &bad, &bad,
     /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &bad, &bad, &bad, &f79, &bad, &bad, &bad, &f7D, &bad, &bad,
     /*8*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &f88, &bad, &bad, &bad, &bad, &bad,
     /*9*/ &f90, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-    /*A*/ &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
-    /*B*/ &fB0, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fB8, &bad, &bad, &bad, &bad, &bad, &bad, &bad,
+    /*A*/ &fA0, &fA1, &fA2, &bad, &fA4, &fA5, &fA6, &bad, &bad, &fA9, &bad, &bad, &fAC, &fAD, &fAE, &bad,
+    /*B*/ &fB0, &fB1, &bad, &bad, &fB4, &fB5, &fB6, &bad, &fB8, &fB9, &bad, &bad, &fBC, &fBD, &fBE, &bad,
     /*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
     /*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
-    /*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &fE6, &bad, &fE8, &bad, &bad, &bad, &fEC, &bad, &fEE, &bad,
+    /*E*/ &fE0, &bad, &bad, &bad, &fE4, &bad, &fE6, &bad, &fE8, &bad, &fEA, &bad, &fEC, &bad, &fEE, &bad,
     /*F*/ &fF0, &bad, &bad, &bad, &bad, &bad, &fF6, &bad, &bad, &bad, &bad, &bad, &bad, &bad, &fFE, &bad};
 
 void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
