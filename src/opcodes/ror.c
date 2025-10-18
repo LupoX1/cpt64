@@ -19,8 +19,6 @@ void f66(cpu_6510_t *cpu, memory_t ram)
   uint16_t address = decode_address_zeropage(cpu, ram);
   uint8_t result = ror(cpu, ram[address]);
   ram[address] = result;
-  increment_cycles(cpu,5);
-  increment_program_counter(cpu, 2);
 }
 
 void f6A(cpu_6510_t *cpu, memory_t ram)
@@ -28,8 +26,6 @@ void f6A(cpu_6510_t *cpu, memory_t ram)
   uint8_t acc = read_accumulator(cpu);
   uint8_t result = ror(cpu, acc);
   write_accumulator(cpu, acc);
-  increment_cycles(cpu,2);
-  increment_program_counter(cpu, 1);
 }
 
 void f6E(cpu_6510_t *cpu, memory_t ram)
@@ -37,8 +33,6 @@ void f6E(cpu_6510_t *cpu, memory_t ram)
   uint16_t address = decode_address_absolute(cpu, ram);
   uint8_t result = ror(cpu, ram[address]);
   ram[address] = result;
-  increment_cycles(cpu,6);
-  increment_program_counter(cpu, 3);
 }
 
 void f76(cpu_6510_t *cpu, memory_t ram)
@@ -46,8 +40,6 @@ void f76(cpu_6510_t *cpu, memory_t ram)
   uint16_t address = decode_address_zeropage_x(cpu, ram);
   uint8_t result = ror(cpu, ram[address]);
   ram[address] = result;
-  increment_cycles(cpu,6);
-  increment_program_counter(cpu, 2);
 }
 
 void f7E(cpu_6510_t *cpu, memory_t ram)
@@ -55,6 +47,4 @@ void f7E(cpu_6510_t *cpu, memory_t ram)
   uint16_t address = decode_address_absolute_x(cpu, ram);
   uint8_t result = ror(cpu, ram[address]);
   ram[address] = result;
-  increment_cycles(cpu,7);
-  increment_program_counter(cpu, 3);
 }

@@ -112,11 +112,10 @@ instruction_t instruction_set[256] = {
     /*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
     /*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
     /*E*/ &fE0, &fE1, &bad, &bad, &fE4, &fE5, &fE6, &bad, &fE8, &fE9, &fEA, &bad, &fEC, &fED, &fEE, &bad,
-    /*F*/ &fF0, &fF1, &bad, &bad, &bad, &fF5, &fF6, &bad, &fF8, &fF9, &bad, &bad, &bad, &fFD, &fFE, &bad
-};
+    /*F*/ &fF0, &fF1, &bad, &bad, &bad, &fF5, &fF6, &bad, &fF8, &fF9, &bad, &bad, &bad, &fFD, &fFE, &bad};
 
 uint8_t instruction_cycles[256] = {
-    /*    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */    
+    /*    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */
     /*0*/ 7, 6, 0, 0, 0, 3, 5, 0, 3, 2, 2, 0, 0, 4, 6, 0,
     /*1*/ 2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0,
     /*2*/ 6, 6, 0, 0, 3, 3, 5, 0, 4, 2, 2, 0, 4, 4, 6, 0,
@@ -132,11 +131,10 @@ uint8_t instruction_cycles[256] = {
     /*C*/ 2, 6, 0, 0, 3, 3, 5, 0, 2, 2, 2, 0, 4, 4, 6, 0,
     /*D*/ 2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0,
     /*E*/ 2, 6, 0, 0, 3, 3, 5, 0, 2, 2, 2, 0, 4, 4, 6, 0,
-    /*F*/ 2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0
-};
+    /*F*/ 2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0};
 
 uint8_t instruction_sizes[256] = {
-    /*    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */    
+    /*    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */
     /*0*/ 1, 2, 0, 0, 0, 2, 2, 0, 1, 2, 1, 0, 0, 3, 3, 0,
     /*1*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
     /*2*/ 3, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 4, 3, 3, 0,
@@ -152,8 +150,7 @@ uint8_t instruction_sizes[256] = {
     /*C*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /*D*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
     /*E*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
-    /*F*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0
-};
+    /*F*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0};
 
 void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
 {
@@ -383,4 +380,36 @@ void dump_cpu(cpu_6510_t *cpu, FILE *file)
 
     fprintf(file, "AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
     fprintf(file, "PC: %04X SP: %02X SR: %02X %s %lu\n\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
+}
+
+void log_cpu(cpu_6510_t *cpu, memory_t ram)
+{
+    char flags[9];
+    flags[0] = get_negative_flag(cpu) ? 'x' : '.';
+    flags[1] = get_overflow_flag(cpu) ? 'x' : '.';
+    flags[2] = '.';
+    flags[3] = get_break_flag(cpu) ? 'x' : '.';
+    flags[4] = get_decimal_flag(cpu) ? 'x' : '.';
+    flags[5] = get_interrupt_flag(cpu) ? 'x' : '.';
+    flags[6] = get_zero_flag(cpu) ? 'x' : '.';
+    flags[7] = get_carry_flag(cpu) ? 'x' : '.';
+    flags[8] = 0;
+
+    printf("\033[2J\033[1;1H");
+    printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
+    printf("PC: %04X SP: %02X SR: %02X %s %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
+    printf("%04X %04X %04X %04X\n", cpu->pc, cpu->pc + 1, cpu->pc + 2, cpu->pc + 3);
+    printf("  %02X   %02X   %02X   %02X\n", ram[cpu->pc], ram[cpu->pc + 1], ram[cpu->pc + 2], ram[cpu->pc + 3]);
+}
+
+bool cpu_step(cpu_6510_t *cpu, memory_t ram)
+{
+    log_cpu(cpu, ram);
+    uint8_t opcode = ram[cpu->pc];
+    instruction_t execute = instruction_set[opcode];
+    execute(cpu, ram);
+    increment_cycles(cpu, instruction_cycles[opcode]);
+    increment_program_counter(cpu, instruction_sizes[opcode]);
+
+    return true;
 }

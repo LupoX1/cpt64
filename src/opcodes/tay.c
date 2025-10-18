@@ -6,6 +6,4 @@ void fA8(cpu_6510_t *cpu, memory_t ram)
     write_yr(cpu, acc);
     set_zero_flag(cpu, acc == 0);
     set_negative_flag(cpu, (acc & 0x80) != 0);
-    increment_cycles(cpu, 2);
-    increment_program_counter(cpu, 1);
 }

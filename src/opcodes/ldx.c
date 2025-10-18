@@ -11,38 +11,28 @@ void fA2(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t address = decode_address_immediate(cpu, ram);
     ldx(cpu, ram[address]);
-    increment_cycles(cpu, 2);
-    increment_program_counter(cpu, 2);
 }
 
 void fA6(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t address = decode_address_zeropage(cpu, ram);
     ldx(cpu, ram[address]);
-    increment_cycles(cpu, 3);
-    increment_program_counter(cpu, 2);
 }
 
 void fAE(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t address = decode_address_absolute(cpu, ram);
     ldx(cpu, ram[address]);
-    increment_cycles(cpu, 4);
-    increment_program_counter(cpu, 3);
 }
 
 void fB6(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t address = decode_address_zeropage_y(cpu, ram);
     ldx(cpu, ram[address]);
-    increment_cycles(cpu, 4);
-    increment_program_counter(cpu, 2);
 }
 
 void fBE(cpu_6510_t *cpu, memory_t ram)
 {
     uint16_t address = decode_address_absolute_y(cpu, ram);
     ldx(cpu, ram[address]);
-    increment_cycles(cpu, 4);
-    increment_program_counter(cpu, 3);
 }

@@ -75,5 +75,8 @@ uint16_t decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram);
 uint16_t decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram);
 
 void dump_cpu(cpu_6510_t *cpu, FILE *file);
+void log_instruction(cpu_6510_t *cpu, memory_t ram);
+
+bool cpu_step(cpu_6510_t *cpu, memory_t ram);
 
 #endif // CPU_H

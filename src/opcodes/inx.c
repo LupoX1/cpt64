@@ -7,7 +7,4 @@ void fE8(cpu_6510_t *cpu, memory_t ram)
 
    set_negative_flag(cpu, (result & 0x80) != 0);
    set_zero_flag(cpu, result == 0);
-   increment_cycles(cpu, 2);
-   increment_program_counter(cpu, 1);
 }
-

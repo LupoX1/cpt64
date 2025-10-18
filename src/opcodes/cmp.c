@@ -14,63 +14,47 @@ void fC1(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_indirect_x(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 6);
-   increment_program_counter(cpu, 2);
 }
 
 void fC5(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_zeropage(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 3);
-   increment_program_counter(cpu, 2);
 }
 
 void fC9(cpu_6510_t *cpu, memory_t ram)
 {
   uint16_t address = decode_address_immediate(cpu, ram);
   cmp(cpu, ram[address]);
-  increment_cycles(cpu, 2);
-   increment_program_counter(cpu, 2);
 }
 
 void fCD(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_absolute(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 4);
-   increment_program_counter(cpu, 3);
 }
 
 void fD1(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_indirect_y(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 5);
-   increment_program_counter(cpu, 2);
 }
 
 void fD5(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_zeropage_x(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 3);
-   increment_program_counter(cpu, 2);
 }
 
 void fD9(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_absolute_y(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 4);
-   increment_program_counter(cpu, 3);
 }
 
 void fDD(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_absolute_x(cpu, ram);
    cmp(cpu, ram[address]);
-   increment_cycles(cpu, 4);
-   increment_program_counter(cpu, 3);
 }
 

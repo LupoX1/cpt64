@@ -11,7 +11,4 @@ void f00(cpu_6510_t *cpu, memory_t ram)
 
     set_interrupt_flag(cpu, true);
     set_break_flag(cpu, true);
-
-    increment_cycles(cpu, 7);
-    increment_program_counter(cpu, 1);
 }

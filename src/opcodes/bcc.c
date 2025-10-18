@@ -10,7 +10,4 @@ void f90(cpu_6510_t *cpu, memory_t ram)
         write_program_counter(cpu, address);
         return;
     }
-
-    increment_cycles(cpu, 2);
-    increment_program_counter(cpu, 2);
 }

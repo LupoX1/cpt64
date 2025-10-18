@@ -75,11 +75,7 @@ void c64_core_reset(C64_Core *core)
 
 bool c64_core_step(C64_Core *core)
 {
-  uint8_t opcode = fetch_instruction(core->cpu, core->ram);
-  instruction_t execute = decode_instruction(opcode);
-  printf("Execute: %02X @ %04X\n", opcode, read_program_counter(core->cpu));
-  execute(core->cpu, core->ram);
-  return true;
+  return cpu_step(core->cpu, core->ram);
 }
 
 C64_Framebuffer *get_c64_framebuffer(C64_Core *core)
@@ -87,9 +83,4 @@ C64_Framebuffer *get_c64_framebuffer(C64_Core *core)
   if (core)
     return &core->framebuffer;
   return NULL;
-}
-
-void c64_log_status(C64_Core *core)
-{ 
-  printf("");
 }

@@ -14,23 +14,17 @@ void fE0(cpu_6510_t *cpu, memory_t ram)
 {
   uint16_t address = decode_address_immediate(cpu, ram);
   cpx(cpu, ram[address]);
-  increment_cycles(cpu, 2);
-  increment_program_counter(cpu, 2);
 }
 
 void fE4(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_zeropage(cpu, ram);
    cpx(cpu, ram[address]);
-   increment_cycles(cpu, 3);
-  increment_program_counter(cpu, 2);
 }
 
 void fEC(cpu_6510_t *cpu, memory_t ram)
 {
    uint16_t address = decode_address_absolute(cpu, ram);
    cpx(cpu, ram[address]);
-   increment_cycles(cpu, 4);
-  increment_program_counter(cpu, 3);
 }
 

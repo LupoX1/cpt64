@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
 
     for(uint8_t i = 0; i<100; i++)
     {
+      getchar();
       c64_core_step(core);
     }
 
