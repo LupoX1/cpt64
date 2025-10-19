@@ -99,7 +99,7 @@ uint8_t instruction_sizes[256] = {
     /*    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */
     /*0*/ 1, 2, 0, 0, 0, 2, 2, 0, 1, 2, 1, 0, 0, 3, 3, 0,
     /*1*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
-    /*2*/ 3, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 4, 3, 3, 0,
+    /*2*/ 3, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /*3*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
     /*4*/ 1, 2, 0, 0, 0, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /*5*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
@@ -285,17 +285,17 @@ uint16_t decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
 
 uint16_t decode_address_zeropage(cpu_6510_t *cpu, memory_t ram)
 {
-    return (uint16_t)ram[cpu->pc + 1];
+    return (uint8_t)ram[cpu->pc + 1];
 }
 
 uint16_t decode_address_zeropage_x(cpu_6510_t *cpu, memory_t ram)
 {
-    return (uint8_t)ram[cpu->pc + 1] + cpu->x;
+    return (uint8_t)(ram[cpu->pc + 1] + cpu->x);
 }
 
 uint16_t decode_address_zeropage_y(cpu_6510_t *cpu, memory_t ram)
 {
-    return (uint16_t)ram[cpu->pc + 1] + cpu->y;
+    return (uint8_t)(ram[cpu->pc + 1] + cpu->y);
 }
 
 uint16_t decode_address_relative(cpu_6510_t *cpu, memory_t ram)
@@ -323,9 +323,9 @@ uint16_t decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
 uint16_t decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)
 {
     uint8_t zp_base = ram[cpu->pc + 1];
-    uint8_t zp_addr = ram[zp_base + cpu->x];
+    uint8_t zp_addr = zp_base + cpu->x;
     uint8_t low_addr = ram[zp_addr];
-    uint8_t high_addr = ram[(uint8_t)zp_addr + 1];
+    uint8_t high_addr = ram[(uint8_t)(zp_addr + 1)];
     return high_addr << 8 | low_addr;
 }
 
