@@ -326,7 +326,8 @@ bool jmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool jsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, pc + 2);
+    push(cpu, ram, pc);
+    write_program_counter(cpu, address);
     return true;
 }
 

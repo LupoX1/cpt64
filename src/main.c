@@ -48,11 +48,36 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 #else
 
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "c64_core.h"
 
+C64_Core *core;
+
+void segfault_handler_extended(int sig, siginfo_t *si, void *unused) {
+    printf("SIGSEGV catturato!\n");
+    printf("Indirizzo che ha causato l'errore: %p\n", si->si_addr);
+    printf("Codice errore: %d\n", si->si_code);
+
+    dump_data(core);
+    
+    exit(1);
+}
+
 int main(int argc, char* argv[]) {
+
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = segfault_handler_extended;
+    
+    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+        perror("sigaction");
+        return 1;
+    }
+
     printf("=== %s ===\n", APP_NAME);
     printf("Version: %s\n", APP_VERSION);
     printf("Description: %s\n", APP_DESCRIPTION);
@@ -60,15 +85,16 @@ int main(int argc, char* argv[]) {
     
     printf("Running without SDL3 support... HIT ENTER TO STEP\n");
     getchar();
-    printf("\033[2J");
+    printf("\033[2J\033[1;1H");
     
-    C64_Core *core = c64_core_create();
+    core = c64_core_create();
     c64_core_reset(core);
     
     do
     {
+      //dump_data(core);
       c64_log_status(core);
-      getchar();
+      //getchar();
     }while(c64_core_step(core));
 
     dump_data(core);
