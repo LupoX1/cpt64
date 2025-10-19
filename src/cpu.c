@@ -214,14 +214,16 @@ void increment_program_counter(cpu_6510_t *cpu, uint16_t value)
 
 void push(cpu_6510_t *cpu, memory_t ram, uint8_t value)
 {
-    ram[cpu->sp] = value;
-    cpu->sp = cpu->sp - 1;
+    uint16_t address = 0x0100 | cpu->sp;
+    ram[address] = value;
+    cpu->sp = (cpu->sp - 1) & 0xFF;
 }
 
 uint8_t pop(cpu_6510_t *cpu, memory_t ram)
 {
-    cpu->sp = cpu->sp + 1;
-    return ram[cpu->sp];
+    cpu->sp = (cpu->sp + 1) & 0xFF;
+    uint16_t addr = 0x0100 | cpu->sp;
+    return ram[addr];
 }
 
 uint64_t read_cycles(cpu_6510_t *cpu)
@@ -288,7 +290,7 @@ uint16_t decode_address_zeropage(cpu_6510_t *cpu, memory_t ram)
 
 uint16_t decode_address_zeropage_x(cpu_6510_t *cpu, memory_t ram)
 {
-    return (uint16_t)ram[cpu->pc + 1] + cpu->x;
+    return (uint8_t)ram[cpu->pc + 1] + cpu->x;
 }
 
 uint16_t decode_address_zeropage_y(cpu_6510_t *cpu, memory_t ram)
@@ -311,14 +313,19 @@ uint16_t decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
     uint8_t low_addr = ram[cpu->pc + 1];
     uint8_t high_addr = ram[cpu->pc + 2];
     uint16_t address = high_addr << 8 | low_addr;
-    return ram[address + 1] << 8 | ram[address];
+    
+    uint8_t target_low = ram[address];
+    uint8_t target_high = ram[(address & 0xFF00) | ((address + 1) & 0x00FF)];
+    
+    return (target_high << 8) | target_low;
 }
 
 uint16_t decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)
 {
-    uint16_t zp_addr = (uint16_t)ram[cpu->pc + 1];
-    uint8_t low_addr = ram[zp_addr + cpu->x];
-    uint8_t high_addr = ram[zp_addr + cpu->x + 1];
+    uint8_t zp_base = ram[cpu->pc + 1];
+    uint8_t zp_addr = ram[zp_base + cpu->x];
+    uint8_t low_addr = ram[zp_addr];
+    uint8_t high_addr = ram[(uint8_t)zp_addr + 1];
     return high_addr << 8 | low_addr;
 }
 
@@ -364,7 +371,7 @@ void log_cpu(cpu_6510_t *cpu, memory_t ram)
     flags[7] = get_carry_flag(cpu) ? 'x' : '.';
     flags[8] = 0;
 
-    printf("\033[1;1H");
+    //printf("\033[1;1H");
     printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Instruction Cycles\n", cpu->a, cpu->x, cpu->y);
     printf("PC: %04X SP: %02X SR: %02X %s %s         %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, instructions[ram[cpu->pc]], cpu->cycles);
     printf("%04X %04X %04X %04X\n", cpu->pc, cpu->pc + 1, cpu->pc + 2, cpu->pc + 3);

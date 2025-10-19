@@ -6,17 +6,9 @@
 #include "cpu.h"
 #include "memory.h"
 
-struct C64_Core
-{
-  memory_t ram;
-  uint8_t basic[0x2000];
-  uint8_t kernal[0x2000];
-  uint8_t chars[0x1000];
-  C64_Framebuffer framebuffer;
-  cpu_6510_t *cpu;
-};
 
-void load_data(char *path,uint8_t *location, size_t size)
+
+void load_data(char *path, uint8_t *location, size_t size)
 {
   FILE *data = fopen(path, "rb");
   if(!data) return;
@@ -61,6 +53,25 @@ void c64_core_load_roms(C64_Core *core)
   load_data("roms/basic.bin",core->ram + 0xA000, 0x2000);
   load_data("roms/kernal.bin",core->ram + 0xE000, 0x2000);
   load_data("roms/chargen.bin",core->ram+0xD000, 0x1000);
+}
+
+bool c64_load_binary(C64_Core *core, const char *filename, uint16_t addr)
+{
+    FILE *f = fopen(filename, "rb");
+    if (!f) {
+        fprintf(stderr, "Error: Cannot open %s\n", filename);
+        return false;
+    }
+    
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    
+    size_t read = fread(&core->ram[addr], 1, size, f);
+    fclose(f);
+    
+    printf("Loaded %ld bytes at $%04X\n", read, addr);
+    return read == size;
 }
 
 void c64_core_reset(C64_Core *core)

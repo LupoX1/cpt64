@@ -147,3 +147,17 @@ add_custom_target(clean-external
 )
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/roms DESTINATION ${CMAKE_BINARY_DIR})
+
+
+# --- Programma di test ---
+add_library(core src/cpu.c src/memory.c src/opcodes.c src/c64_core.c)
+add_executable(tests_exec tests/test_runner.c)
+target_link_libraries(tests_exec PRIVATE core)
+
+# Copia le risorse di test accanto all'eseguibile del test
+add_custom_command(TARGET tests_exec POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources
+        $<TARGET_FILE_DIR:tests_exec>/tests/resources
+    COMMENT "Copia delle risorse di test nella directory di build"
+)

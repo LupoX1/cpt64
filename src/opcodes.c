@@ -11,7 +11,7 @@ bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     {
         uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
         uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
-        uint8_t c = a + b + carry ? 1 : 0;
+        uint8_t c = a + b + (carry ? 1 : 0);
         uint8_t result = c % 100;
 
         write_accumulator(cpu, result);
@@ -21,12 +21,12 @@ bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     }
     else
     {
-        uint16_t result = acc + value + carry ? 1 : 0;
-        write_accumulator(cpu, result & 0x00FF);
-        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & 0x80) != 0);
+        uint16_t result = acc + value + (carry ? 1 : 0);
+        write_accumulator(cpu, (uint8_t)(result & 0x00FF));
+        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & FLAG_N) != 0);
         set_zero_flag(cpu, result == 0);
         set_carry_flag(cpu, result > 0x00FF);
-        set_negative_flag(cpu, (result & 0x80) != 0);
+        set_negative_flag(cpu, (result & FLAG_N) != 0);
     }
 
     return true;
@@ -38,14 +38,14 @@ bool and(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_accumulator(cpu) & value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     return true;
 }
 
 bool asl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t value = address ? ram[address] : read_accumulator(cpu);
-    set_carry_flag(cpu, (value & 0x80) != 0);
+    set_carry_flag(cpu, (value & FLAG_N) != 0);
     uint8_t result = value << 1;
 
     if (address)
@@ -54,7 +54,7 @@ bool asl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
         write_accumulator(cpu, result);
 
     set_zero_flag(cpu, result == 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
 
     return true;
 }
@@ -105,8 +105,8 @@ bool bit(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_accumulator(cpu) & value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
-    set_overflow_flag(cpu, (result & 0x40) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
+    set_overflow_flag(cpu, (result & FLAG_V) != 0);
     return true;
 }
 
@@ -146,6 +146,9 @@ bool bpl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool brk(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t sr = read_sr(cpu);
+
+    sr = sr | FLAG_B;
+    sr = sr | FLAG_U;
 
     push(cpu, ram, address + 2);
     push(cpu, ram, sr);
@@ -208,9 +211,9 @@ bool cmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t acc = read_accumulator(cpu);
     uint8_t result = acc - value;
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
-    set_carry_flag(cpu, acc > value);
+    set_carry_flag(cpu, acc >= value);
 
     return true;
 }
@@ -221,9 +224,9 @@ bool cpx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t xr = read_xr(cpu);
     uint8_t result = xr - value;
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
-    set_carry_flag(cpu, xr > value);
+    set_carry_flag(cpu, xr >= value);
 
     return true;
 }
@@ -234,9 +237,9 @@ bool cpy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t yr = read_yr(cpu);
     uint8_t result = yr - value;
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
-    set_carry_flag(cpu, yr > value);
+    set_carry_flag(cpu, yr >= value);
 
     return true;
 }
@@ -246,7 +249,7 @@ bool dec(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t value = ram[address];
     uint8_t result = value - 1;
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
 
     ram[address] = result;
@@ -259,7 +262,7 @@ bool dex(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_xr(cpu) - 1;
     write_xr(cpu, result);
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
 
     return true;
@@ -270,7 +273,7 @@ bool dey(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_yr(cpu) - 1;
     write_yr(cpu, result);
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
 
     return true;
@@ -282,7 +285,7 @@ bool eor(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_accumulator(cpu) ^ value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     return true;
 }
 
@@ -291,7 +294,7 @@ bool inc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t value = ram[address];
     uint8_t result = value + 1;
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
     ram[address] = result;
     return true;
@@ -302,7 +305,7 @@ bool inx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_xr(cpu) + 1;
     write_xr(cpu, result);
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
     return true;
 }
@@ -312,7 +315,7 @@ bool iny(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_yr(cpu) + 1;
     write_yr(cpu, result);
 
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
     return true;
 }
@@ -326,8 +329,9 @@ bool jmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool jsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, pc);
-    write_program_counter(cpu, address);
+    push(cpu, ram, (uint8_t)(pc >> 8));
+    push(cpu, ram, (uint8_t)(pc & 0xFF));
+//    write_program_counter(cpu, address);
     return true;
 }
 
@@ -336,7 +340,7 @@ bool lda(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t value = ram[address];
     write_accumulator(cpu, value);
     set_zero_flag(cpu, value == 0);
-    set_negative_flag(cpu, (value & 0x80) != 0);
+    set_negative_flag(cpu, (value & FLAG_N) != 0);
     return true;
 }
 
@@ -345,7 +349,7 @@ bool ldx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t value = ram[address];
     write_xr(cpu, value);
     set_zero_flag(cpu, value == 0);
-    set_negative_flag(cpu, (value & 0x80) != 0);
+    set_negative_flag(cpu, (value & FLAG_N) != 0);
     return true;
 }
 
@@ -354,7 +358,7 @@ bool ldy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t value = ram[address];
     write_yr(cpu, value);
     set_zero_flag(cpu, value == 0);
-    set_negative_flag(cpu, (value & 0x80) != 0);
+    set_negative_flag(cpu, (value & FLAG_N) != 0);
     return true;
 }
 
@@ -382,7 +386,7 @@ bool ora(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = read_accumulator(cpu) | value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     return true;
 }
 
@@ -396,6 +400,8 @@ bool pha(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool php(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t status = read_sr(cpu);
+    status = status | FLAG_B;
+    status = status | FLAG_U;
     push(cpu, ram, status);
     return true;
 }
@@ -404,12 +410,16 @@ bool pla(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t acc = pop(cpu, ram);
     write_accumulator(cpu, acc);
+    set_zero_flag(cpu, acc == 0);
+    set_negative_flag(cpu, acc & FLAG_N);
     return true;
 }
 
 bool plp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t status = pop(cpu, ram);
+    status = status & ~FLAG_B;
+    status = status | FLAG_U;
     write_sr(cpu, status);
     return true;
 }
@@ -417,7 +427,7 @@ bool plp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool rol(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t value = address ? ram[address] : read_accumulator(cpu);
-    bool new_carry = (value & 0x80) != 0;
+    bool new_carry = (value & FLAG_N) != 0;
     bool old_carry = get_carry_flag(cpu);
     uint8_t result = value << 1;
     if (old_carry)
@@ -430,7 +440,7 @@ bool rol(cpu_6510_t *cpu, memory_t ram, uint16_t address)
         write_accumulator(cpu, result);
     set_carry_flag(cpu, new_carry);
     set_zero_flag(cpu, result != 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     return true;
 }
 
@@ -442,7 +452,7 @@ bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t result = value >> 1;
     if (old_carry)
     {
-        result = result | 0x80;
+        result = result | FLAG_N;
     }
     if (address)
         ram[address] = result;
@@ -450,7 +460,7 @@ bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
         write_accumulator(cpu, result);
     set_carry_flag(cpu, new_carry);
     set_zero_flag(cpu, result != 0);
-    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_negative_flag(cpu, (result & FLAG_N) != 0);
     return true;
 }
 
@@ -487,7 +497,7 @@ bool sbc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     {
         uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
         uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
-        int8_t c = a - b - carry ? 1 : 0;
+        int8_t c = a - b - (carry ? 1 : 0);
         int8_t result = c < 0 ? c + 100 : c;
 
         write_accumulator(cpu, result);
@@ -497,12 +507,12 @@ bool sbc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     }
     else
     {
-        int16_t result = acc - value - carry ? 1 : 0;
-        write_accumulator(cpu, result & 0x00FF);
-        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & 0x80) != 0);
+        int16_t result = acc - value - (carry ? 1 : 0);
+        write_accumulator(cpu, (uint8_t)(result & 0x00FF));
+        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & FLAG_N) != 0);
         set_zero_flag(cpu, result == 0);
         set_carry_flag(cpu, result > 0x00FF);
-        set_negative_flag(cpu, (result & 0x80) != 0);
+        set_negative_flag(cpu, (result & FLAG_N) != 0);
     }
     return true;
 }
@@ -548,7 +558,7 @@ bool tax(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t acc = read_accumulator(cpu);
     write_xr(cpu, acc);
     set_zero_flag(cpu, acc == 0);
-    set_negative_flag(cpu, (acc & 0x80) != 0);
+    set_negative_flag(cpu, (acc & FLAG_N) != 0);
     return true;
 }
 
@@ -557,7 +567,7 @@ bool tay(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t acc = read_accumulator(cpu);
     write_yr(cpu, acc);
     set_zero_flag(cpu, acc == 0);
-    set_negative_flag(cpu, (acc & 0x80) != 0);
+    set_negative_flag(cpu, (acc & FLAG_N) != 0);
     return true;
 }
 
@@ -566,7 +576,7 @@ bool tsx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t sp = read_sp(cpu);
     write_xr(cpu, sp);
     set_zero_flag(cpu, sp == 0);
-    set_negative_flag(cpu, (sp & 0x80) != 0);
+    set_negative_flag(cpu, (sp & FLAG_N) != 0);
     return true;
 }
 
@@ -575,7 +585,7 @@ bool txa(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t xr = read_xr(cpu);
     write_accumulator(cpu, xr);
     set_zero_flag(cpu, xr == 0);
-    set_negative_flag(cpu, (xr & 0x80) != 0);
+    set_negative_flag(cpu, (xr & FLAG_N) != 0);
     return true;
 }
 
@@ -591,6 +601,6 @@ bool tya(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     uint8_t yr = read_yr(cpu);
     write_accumulator(cpu, yr);
     set_zero_flag(cpu, yr == 0);
-    set_negative_flag(cpu, (yr & 0x80) != 0);
+    set_negative_flag(cpu, (yr & FLAG_N) != 0);
     return true;
 }
