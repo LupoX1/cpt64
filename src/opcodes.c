@@ -146,11 +146,12 @@ bool bpl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool brk(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t sr = read_sr(cpu);
-
     sr = sr | FLAG_B;
     sr = sr | FLAG_U;
 
-    push(cpu, ram, address + 2);
+    uint16_t pc = read_program_counter(cpu) + 1;
+    push(cpu, ram, (uint8_t)(pc >> 8));
+    push(cpu, ram, (uint8_t)(pc & 0xFF));
     push(cpu, ram, sr);
 
     set_interrupt_flag(cpu, true);
@@ -329,9 +330,9 @@ bool jmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool jsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, (uint8_t)(pc >> 8));
-    push(cpu, ram, (uint8_t)(pc & 0xFF));
-//    write_program_counter(cpu, address);
+    push(cpu, ram, (uint8_t)((pc - 1) >> 8));
+    push(cpu, ram, (uint8_t)((pc - 1) & 0xFF));
+    write_program_counter(cpu, address);
     return true;
 }
 
@@ -467,22 +468,24 @@ bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 bool rti(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
     uint8_t status = pop(cpu, ram);
-    uint8_t pc = pop(cpu, ram);
-    write_program_counter(cpu, pc);
+    status = status & ~FLAG_B;
+    status = status | FLAG_U;
 
-    set_negative_flag(cpu, (status & FLAG_N) != 0);
-    set_zero_flag(cpu, (status & FLAG_Z) != 0);
-    set_carry_flag(cpu, (status & FLAG_C) != 0);
-    set_interrupt_flag(cpu, (status & FLAG_I) != 0);
-    set_decimal_flag(cpu, (status & FLAG_D) != 0);
-    set_overflow_flag(cpu, (status & FLAG_V) != 0);
+    uint8_t low = pop(cpu, ram);
+    uint8_t high = pop(cpu, ram);
+    uint16_t pc = high << 8 | low;
+ 
+    write_program_counter(cpu, pc);
+    write_sr(cpu, status);
 
     return true;
 }
 
 bool rts(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {
-    uint8_t pc = pop(cpu, ram);
+    uint8_t low = pop(cpu, ram);
+    uint8_t high = pop(cpu, ram);
+    uint16_t pc = high << 8 | low;
     write_program_counter(cpu, pc + 1);
     return true;
 }
