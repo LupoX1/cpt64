@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
     
     printf("Running without SDL3 support... HIT ENTER TO STEP\n");
     getchar();
+    printf("\033[2J");
     
     C64_Core *core = c64_core_create();
     c64_core_reset(core);

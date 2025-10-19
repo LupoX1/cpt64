@@ -18,6 +18,26 @@ struct cpu_6510_t
     bool irq;
 };
 
+
+char instructions[256][4] = {
+    //    0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+    /*0*/ "brk\0", "ora\0", "bad\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0", "php\0", "ora\0", "asl\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0",
+    /*1*/ "bpl\0", "ora\0", "bad\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0", "clc\0", "ora\0", "bad\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0",
+    /*2*/ "jsr\0", "and\0", "bad\0", "bad\0", "bit\0", "and\0", "rol\0", "bad\0", "plp\0", "and\0", "rol\0", "bad\0", "bit\0", "and\0", "rol\0", "bad\0",
+    /*3*/ "bmi\0", "and\0", "bad\0", "bad\0", "bad\0", "and\0", "rol\0", "bad\0", "sec\0", "and\0", "bad\0", "bad\0", "bad\0", "and\0", "rol\0", "bad\0",
+    /*4*/ "rti\0", "eor\0", "bad\0", "bad\0", "bad\0", "eor\0", "lsr\0", "bad\0", "pha\0", "eor\0", "lsr\0", "bad\0", "jmp\0", "eor\0", "lsr\0", "bad\0",
+    /*5*/ "bvc\0", "eor\0", "bad\0", "bad\0", "bad\0", "eor\0", "lsr\0", "bad\0", "cli\0", "eor\0", "bad\0", "bad\0", "bad\0", "eor\0", "lsr\0", "bad\0",
+    /*6*/ "rts\0", "adc\0", "bad\0", "bad\0", "bad\0", "adc\0", "ror\0", "bad\0", "pla\0", "adc\0", "ror\0", "bad\0", "jmp\0", "adc\0", "ror\0", "bad\0",
+    /*7*/ "bvs\0", "adc\0", "bad\0", "bad\0", "bad\0", "adc\0", "ror\0", "bad\0", "sei\0", "adc\0", "bad\0", "bad\0", "bad\0", "adc\0", "ror\0", "bad\0",
+    /*8*/ "bad\0", "sta\0", "bad\0", "bad\0", "sty\0", "sta\0", "stx\0", "bad\0", "dey\0", "sta\0", "txa\0", "bad\0", "sty\0", "sta\0", "stx\0", "bad\0",
+    /*9*/ "bcc\0", "sta\0", "bad\0", "bad\0", "sty\0", "sta\0", "stx\0", "bad\0", "tya\0", "sta\0", "txs\0", "bad\0", "bad\0", "sta\0", "bad\0", "bad\0",
+    /*A*/ "ldy\0", "lda\0", "ldx\0", "bad\0", "ldy\0", "lda\0", "ldx\0", "bad\0", "tay\0", "lda\0", "tax\0", "bad\0", "ldy\0", "lda\0", "ldx\0", "bad\0",
+    /*B*/ "bsc\0", "lda\0", "bad\0", "bad\0", "ldy\0", "lda\0", "ldx\0", "bad\0", "clv\0", "lda\0", "tsx\0", "bad\0", "ldy\0", "lda\0", "ldx\0", "bad\0",
+    /*C*/ "cpy\0", "cmp\0", "bad\0", "bad\0", "cpy\0", "cmp\0", "dec\0", "bad\0", "iny\0", "cmp\0", "dex\0", "bad\0", "cpy\0", "cmp\0", "dec\0", "bad\0",
+    /*D*/ "bne\0", "cmp\0", "bad\0", "bad\0", "bad\0", "cmp\0", "dec\0", "bad\0", "cld\0", "cmp\0", "bad\0", "bad\0", "bad\0", "cmp\0", "dec\0", "bad\0",
+    /*E*/ "cpx\0", "sbc\0", "bad\0", "bad\0", "cpx\0", "sbc\0", "inc\0", "bad\0", "inx\0", "sbc\0", "nop\0", "bad\0", "cpx\0", "sbc\0", "inc\0", "bad\0",
+    /*F*/ "beq\0", "sbc\0", "bad\0", "bad\0", "bad\0", "sbc\0", "inc\0", "bad\0", "sed\0", "sbc\0", "bad\0", "bad\0", "bad\0", "sbc\0", "inc\0", "bad\0"};
+
 execute_t instruction_set[256] = {
     //    0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
     /*0*/ brk, ora, bad, bad, bad, ora, asl, bad, php, ora, asl, bad, bad, ora, asl, bad,
@@ -344,9 +364,9 @@ void log_cpu(cpu_6510_t *cpu, memory_t ram)
     flags[7] = get_carry_flag(cpu) ? 'x' : '.';
     flags[8] = 0;
 
-    //printf("\033[2J\033[1;1H");
-    printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
-    printf("PC: %04X SP: %02X SR: %02X %s %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
+    printf("\033[1;1H");
+    printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Instruction Cycles\n", cpu->a, cpu->x, cpu->y);
+    printf("PC: %04X SP: %02X SR: %02X %s %s         %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, instructions[ram[cpu->pc]], cpu->cycles);
     printf("%04X %04X %04X %04X\n", cpu->pc, cpu->pc + 1, cpu->pc + 2, cpu->pc + 3);
     printf("  %02X   %02X   %02X   %02X\n", ram[cpu->pc], ram[cpu->pc + 1], ram[cpu->pc + 2], ram[cpu->pc + 3]);
 }
