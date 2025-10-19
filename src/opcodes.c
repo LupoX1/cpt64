@@ -1,0 +1,654 @@
+#include "opcodes.h"
+
+bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("ADC\n");
+
+    uint8_t value = ram[address];
+    bool decimal_mode = get_decimal_flag(cpu);
+    bool carry = get_carry_flag(cpu);
+    uint8_t acc = read_accumulator(cpu);
+
+    if (decimal_mode)
+    {
+        uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
+        uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
+        uint8_t c = a + b + carry ? 1 : 0;
+        uint8_t result = c % 100;
+
+        write_accumulator(cpu, result);
+        set_zero_flag(cpu, result == 0);
+        set_carry_flag(cpu, c > 99);
+        set_negative_flag(cpu, 0);
+    }
+    else
+    {
+        uint16_t result = acc + value + carry ? 1 : 0;
+        write_accumulator(cpu, result & 0x00FF);
+        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & 0x80) != 0);
+        set_zero_flag(cpu, result == 0);
+        set_carry_flag(cpu, result > 0x00FF);
+        set_negative_flag(cpu, (result & 0x80) != 0);
+    }
+
+    return true;
+}
+
+bool and(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("AND\n");
+
+    uint8_t value = ram[address];
+    uint8_t result = read_accumulator(cpu) & value;
+    write_accumulator(cpu, result);
+    set_zero_flag(cpu, result == 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    return true;
+}
+
+bool asl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("ASL\n");
+
+    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    set_carry_flag(cpu, (value & 0x80) != 0);
+    uint8_t result = value << 1;
+
+    if (address)
+        ram[address] = result;
+    else
+        write_accumulator(cpu, result);
+
+    set_zero_flag(cpu, result == 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+
+    return true;
+}
+
+bool bad(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    uint8_t opcode = read(ram, address);
+    printf("BAD %02X @ %04X\n", opcode, address);
+    return false;
+}
+
+bool bcc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BCC\n");
+    bool carry = get_carry_flag(cpu);
+    if (!carry)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool bsc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BSC\n");
+    bool carry = get_carry_flag(cpu);
+    if (carry)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool beq(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BEQ\n");
+    bool zero = get_zero_flag(cpu);
+    if (zero)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool bit(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BIT\n");
+    uint8_t value = ram[address];
+    uint8_t result = read_accumulator(cpu) & value;
+    write_accumulator(cpu, result);
+    set_zero_flag(cpu, result == 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_overflow_flag(cpu, (result & 0x40) != 0);
+    return true;
+}
+
+bool bmi(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BMI\n");
+    bool negative = get_negative_flag(cpu);
+    if (negative)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool bne(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BNE\n");
+    bool zero = get_zero_flag(cpu);
+    if (!zero)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool bpl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BPL\n");
+    bool negative = get_negative_flag(cpu);
+    if (!negative)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool brk(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BRK\n");
+    uint8_t sr = read_sr(cpu);
+
+    push(cpu, ram, address + 2);
+    push(cpu, ram, sr);
+
+    set_interrupt_flag(cpu, true);
+    set_break_flag(cpu, true);
+
+    return true;
+}
+
+bool bvc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BVC\n");
+    bool overflow = get_overflow_flag(cpu);
+    if (!overflow)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool bvs(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("BVS\n");
+    bool overflow = get_overflow_flag(cpu);
+    if (overflow)
+    {
+        increment_cycles(cpu, 1);
+        write_program_counter(cpu, address);
+    }
+    return true;
+}
+
+bool clc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CLC\n");
+    set_carry_flag(cpu, false);
+    return true;
+}
+
+bool cld(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CLD\n");
+    set_interrupt_flag(cpu, false);
+    return true;
+}
+
+bool cli(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CLI\n");
+    set_carry_flag(cpu, false);
+    return true;
+}
+
+bool clv(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CLV\n");
+    set_overflow_flag(cpu, false);
+    return true;
+}
+
+bool cmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CMP\n");
+    uint8_t value = ram[address];
+    uint8_t acc = read_accumulator(cpu);
+    uint8_t result = acc - value;
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+    set_carry_flag(cpu, acc > value);
+
+    return true;
+}
+
+bool cpx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CPX\n");
+    uint8_t value = ram[address];
+    uint8_t xr = read_xr(cpu);
+    uint8_t result = xr - value;
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+    set_carry_flag(cpu, xr > value);
+
+    return true;
+}
+
+bool cpy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("CPY\n");
+    uint8_t value = ram[address];
+    uint8_t yr = read_yr(cpu);
+    uint8_t result = yr - value;
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+    set_carry_flag(cpu, yr > value);
+
+    return true;
+}
+
+bool dec(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("DEC\n");
+    uint8_t value = ram[address];
+    uint8_t result = value - 1;
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+
+    ram[address] = result;
+
+    return true;
+}
+
+bool dex(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("DEX\n");
+    uint8_t result = read_xr(cpu) - 1;
+    write_xr(cpu, result);
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+
+    return true;
+}
+
+bool dey(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("DEY\n");
+    uint8_t result = read_yr(cpu) - 1;
+    write_yr(cpu, result);
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+
+    return true;
+}
+
+bool eor(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("EOR\n");
+    uint8_t value = ram[address];
+    uint8_t result = read_accumulator(cpu) ^ value;
+    write_accumulator(cpu, result);
+    set_zero_flag(cpu, result == 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    return true;
+}
+
+bool inc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("INC\n");
+    uint8_t value = ram[address];
+    uint8_t result = value + 1;
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+    ram[address] = result;
+    return true;
+}
+
+bool inx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("INX\n");
+    uint8_t result = read_xr(cpu) + 1;
+    write_xr(cpu, result);
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+    return true;
+}
+
+bool iny(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("INY\n");
+    uint8_t result = read_yr(cpu) + 1;
+    write_yr(cpu, result);
+
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    set_zero_flag(cpu, result == 0);
+    return true;
+}
+
+bool jmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("JMP\n");
+    write_program_counter(cpu, address);
+    return true;
+}
+
+bool jsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("JSR\n");
+    uint16_t pc = read_program_counter(cpu);
+    push(cpu, ram, pc + 2);
+    return true;
+}
+
+bool lda(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("LDA\n");
+    uint8_t value = ram[address];
+    write_accumulator(cpu, value);
+    set_zero_flag(cpu, value == 0);
+    set_negative_flag(cpu, (value & 0x80) != 0);
+    return true;
+}
+
+bool ldx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("LDX\n");
+    uint8_t value = ram[address];
+    write_xr(cpu, value);
+    set_zero_flag(cpu, value == 0);
+    set_negative_flag(cpu, (value & 0x80) != 0);
+    return true;
+}
+
+bool ldy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("LDY\n");
+    uint8_t value = ram[address];
+    write_yr(cpu, value);
+    set_zero_flag(cpu, value == 0);
+    set_negative_flag(cpu, (value & 0x80) != 0);
+    return true;
+}
+
+bool lsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("LSR\n");
+    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    uint8_t result = value >> 1;
+    if (address)
+        ram[address] = result;
+    else
+        write_accumulator(cpu, result);
+    set_carry_flag(cpu, (value & 0x0001) != 0);
+    set_zero_flag(cpu, value == 0);
+    set_negative_flag(cpu, false);
+    return true;
+}
+
+bool nop(cpu_6510_t *cpu, memory_t ram, uint16_t address) {
+    printf("NOP\n");
+    return true;
+}
+
+bool ora(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("ORA\n");
+    uint8_t value = ram[address];
+    uint8_t result = read_accumulator(cpu) | value;
+    write_accumulator(cpu, result);
+    set_zero_flag(cpu, result == 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    return true;
+}
+
+bool pha(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("PHA\n");
+    uint8_t acc = read_accumulator(cpu);
+    push(cpu, ram, acc);
+    return true;
+}
+
+bool php(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("PHP\n");
+    uint8_t status = read_sr(cpu);
+    push(cpu, ram, status);
+    return true;
+}
+
+bool pla(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("PLA\n");
+    uint8_t acc = pop(cpu, ram);
+    write_accumulator(cpu, acc);
+    return true;
+}
+
+bool plp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("PLP\n");
+    uint8_t status = pop(cpu, ram);
+    write_sr(cpu, status);
+    return true;
+}
+
+bool rol(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("ROL\n");
+    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    bool new_carry = (value & 0x80) != 0;
+    bool old_carry = get_carry_flag(cpu);
+    uint8_t result = value << 1;
+    if (old_carry)
+    {
+        result = result | 0x01;
+    }
+    if (address)
+        ram[address] = result;
+    else
+        write_accumulator(cpu, result);
+    set_carry_flag(cpu, new_carry);
+    set_zero_flag(cpu, result != 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    return true;
+}
+
+bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("ROR\n");
+    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    bool new_carry = (value & 0x01) != 0;
+    bool old_carry = get_carry_flag(cpu);
+    uint8_t result = value >> 1;
+    if (old_carry)
+    {
+        result = result | 0x80;
+    }
+    if (address)
+        ram[address] = result;
+    else
+        write_accumulator(cpu, result);
+    set_carry_flag(cpu, new_carry);
+    set_zero_flag(cpu, result != 0);
+    set_negative_flag(cpu, (result & 0x80) != 0);
+    return true;
+}
+
+bool rti(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("RTI\n");
+    uint8_t status = pop(cpu, ram);
+    uint8_t pc = pop(cpu, ram);
+    write_program_counter(cpu, pc);
+
+    set_negative_flag(cpu, (status & FLAG_N) != 0);
+    set_zero_flag(cpu, (status & FLAG_Z) != 0);
+    set_carry_flag(cpu, (status & FLAG_C) != 0);
+    set_interrupt_flag(cpu, (status & FLAG_I) != 0);
+    set_decimal_flag(cpu, (status & FLAG_D) != 0);
+    set_overflow_flag(cpu, (status & FLAG_V) != 0);
+
+    return true;
+}
+
+bool rts(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("RTS\n");
+    uint8_t pc = pop(cpu, ram);
+    write_program_counter(cpu, pc + 1);
+    return true;
+}
+
+bool sbc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("SBC\n");
+    uint8_t value = ram[address];
+    bool decimal_mode = get_decimal_flag(cpu);
+    bool carry = get_carry_flag(cpu);
+    uint8_t acc = read_accumulator(cpu);
+    if (decimal_mode)
+    {
+        uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
+        uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
+        int8_t c = a - b - carry ? 1 : 0;
+        int8_t result = c < 0 ? c + 100 : c;
+
+        write_accumulator(cpu, result);
+        set_zero_flag(cpu, result == 0);
+        set_carry_flag(cpu, c < 0);
+        set_negative_flag(cpu, 0);
+    }
+    else
+    {
+        int16_t result = acc - value - carry ? 1 : 0;
+        write_accumulator(cpu, result & 0x00FF);
+        set_overflow_flag(cpu, (~(acc ^ value) & (acc ^ result) & 0x80) != 0);
+        set_zero_flag(cpu, result == 0);
+        set_carry_flag(cpu, result > 0x00FF);
+        set_negative_flag(cpu, (result & 0x80) != 0);
+    }
+    return true;
+}
+
+bool sec(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("SEC\n");
+    set_carry_flag(cpu, true);
+    return true;
+}
+
+bool sed(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("SED\n");
+    set_decimal_flag(cpu, true);
+    return true;
+}
+
+bool sei(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("SEI\n");
+    set_interrupt_flag(cpu, true);
+    return true;
+}
+
+bool sta(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("STA\n");
+    ram[address] = read_accumulator(cpu);
+    return true;
+}
+
+bool stx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("STX\n");
+    ram[address] = read_xr(cpu);
+    return true;
+}
+
+bool sty(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("STY\n");
+    ram[address] = read_yr(cpu);
+    return true;
+}
+
+bool tax(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("TAX\n");
+    uint8_t acc = read_accumulator(cpu);
+    write_xr(cpu, acc);
+    set_zero_flag(cpu, acc == 0);
+    set_negative_flag(cpu, (acc & 0x80) != 0);
+    return true;
+}
+
+bool tay(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("TAY\n");
+    uint8_t acc = read_accumulator(cpu);
+    write_yr(cpu, acc);
+    set_zero_flag(cpu, acc == 0);
+    set_negative_flag(cpu, (acc & 0x80) != 0);
+    return true;
+}
+
+bool tsx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("TSX\n");
+    uint8_t sp = read_sp(cpu);
+    write_xr(cpu, sp);
+    set_zero_flag(cpu, sp == 0);
+    set_negative_flag(cpu, (sp & 0x80) != 0);
+    return true;
+}
+
+bool txa(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("TXA\n");
+    uint8_t xr = read_xr(cpu);
+    write_accumulator(cpu, xr);
+    set_zero_flag(cpu, xr == 0);
+    set_negative_flag(cpu, (xr & 0x80) != 0);
+    return true;
+}
+
+bool txs(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("TXS\n");
+    uint8_t xr = read_xr(cpu);
+    write_sp(cpu, xr);
+    return true;
+}
+
+bool tya(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+{
+    printf("TYA\n");
+    uint8_t yr = read_yr(cpu);
+    write_accumulator(cpu, yr);
+    set_zero_flag(cpu, yr == 0);
+    set_negative_flag(cpu, (yr & 0x80) != 0);
+    return true;
+}

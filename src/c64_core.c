@@ -84,3 +84,8 @@ C64_Framebuffer *get_c64_framebuffer(C64_Core *core)
     return &core->framebuffer;
   return NULL;
 }
+
+void c64_log_status(C64_Core *core)
+{
+  log_cpu(core->cpu, core->ram);
+}

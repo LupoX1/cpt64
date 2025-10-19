@@ -2,62 +2,7 @@
 #include <stdlib.h>
 
 #include "cpu.h"
-#include "opcodes/adc.h"
-#include "opcodes/and.h"
-#include "opcodes/asl.h"
-#include "opcodes/bcc.h"
-#include "opcodes/bcs.h"
-#include "opcodes/beq.h"
-#include "opcodes/bit.h"
-#include "opcodes/bmi.h"
-#include "opcodes/bne.h"
-#include "opcodes/bpl.h"
-#include "opcodes/brk.h"
-#include "opcodes/bvc.h"
-#include "opcodes/bvs.h"
-#include "opcodes/clc.h"
-#include "opcodes/cld.h"
-#include "opcodes/cli.h"
-#include "opcodes/clv.h"
-#include "opcodes/cmp.h"
-#include "opcodes/cpx.h"
-#include "opcodes/cpy.h"
-#include "opcodes/dec.h"
-#include "opcodes/dex.h"
-#include "opcodes/dey.h"
-#include "opcodes/eor.h"
-#include "opcodes/inc.h"
-#include "opcodes/inx.h"
-#include "opcodes/iny.h"
-#include "opcodes/jmp.h"
-#include "opcodes/jsr.h"
-#include "opcodes/lda.h"
-#include "opcodes/ldx.h"
-#include "opcodes/ldy.h"
-#include "opcodes/lsr.h"
-#include "opcodes/nop.h"
-#include "opcodes/ora.h"
-#include "opcodes/pha.h"
-#include "opcodes/php.h"
-#include "opcodes/pla.h"
-#include "opcodes/plp.h"
-#include "opcodes/rol.h"
-#include "opcodes/ror.h"
-#include "opcodes/rti.h"
-#include "opcodes/rts.h"
-#include "opcodes/sbc.h"
-#include "opcodes/sec.h"
-#include "opcodes/sed.h"
-#include "opcodes/sei.h"
-#include "opcodes/sta.h"
-#include "opcodes/stx.h"
-#include "opcodes/sty.h"
-#include "opcodes/tax.h"
-#include "opcodes/tay.h"
-#include "opcodes/tsx.h"
-#include "opcodes/txa.h"
-#include "opcodes/txs.h"
-#include "opcodes/tya.h"
+#include "opcodes.h"
 
 struct cpu_6510_t
 {
@@ -73,46 +18,43 @@ struct cpu_6510_t
     bool irq;
 };
 
-cpu_6510_t *create_cpu()
-{
-    cpu_6510_t *cpu = malloc(sizeof(cpu_6510_t));
-    if (cpu)
-        return cpu;
-    return NULL;
-}
+execute_t instruction_set[256] = {
+    //    0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+    /*0*/ brk, ora, bad, bad, bad, ora, asl, bad, php, ora, asl, bad, bad, ora, asl, bad,
+    /*1*/ bpl, ora, bad, bad, bad, ora, asl, bad, clc, ora, bad, bad, bad, ora, asl, bad,
+    /*2*/ jsr, and, bad, bad, bit, and, rol, bad, plp, and, rol, bad, bit, and, rol, bad,
+    /*3*/ bmi, and, bad, bad, bad, and, rol, bad, sec, and, bad, bad, bad, and, rol, bad,
+    /*4*/ rti, eor, bad, bad, bad, eor, lsr, bad, pha, eor, lsr, bad, jmp, eor, lsr, bad,
+    /*5*/ bvc, eor, bad, bad, bad, eor, lsr, bad, cli, eor, bad, bad, bad, eor, lsr, bad,
+    /*6*/ rts, adc, bad, bad, bad, adc, ror, bad, pla, adc, ror, bad, jmp, adc, ror, bad,
+    /*7*/ bvs, adc, bad, bad, bad, adc, ror, bad, sei, adc, bad, bad, bad, adc, ror, bad,
+    /*8*/ bad, sta, bad, bad, sty, sta, stx, bad, dey, sta, txa, bad, sty, sta, stx, bad,
+    /*9*/ bcc, sta, bad, bad, sty, sta, stx, bad, tya, sta, txs, bad, bad, sta, bad, bad,
+    /*A*/ ldy, lda, ldx, bad, ldy, lda, ldx, bad, tay, lda, tax, bad, ldy, lda, ldx, bad,
+    /*B*/ bsc, lda, bad, bad, ldy, lda, ldx, bad, clv, lda, tsx, bad, ldy, lda, ldx, bad,
+    /*C*/ cpy, cmp, bad, bad, cpy, cmp, dec, bad, iny, cmp, dex, bad, cpy, cmp, dec, bad,
+    /*D*/ bne, cmp, bad, bad, bad, cmp, dec, bad, cld, cmp, bad, bad, bad, cmp, dec, bad,
+    /*E*/ cpx, sbc, bad, bad, cpx, sbc, inc, bad, inx, sbc, nop, bad, cpx, sbc, inc, bad,
+    /*F*/ beq, sbc, bad, bad, bad, sbc, inc, bad, sed, sbc, bad, bad, bad, sbc, inc, bad};
 
-void destroy_cpu(cpu_6510_t *cpu)
-{
-    if (cpu)
-        free(cpu);
-}
-
-void bad(cpu_6510_t *cpu, memory_t ram)
-{
-    uint16_t pc = read_program_counter(cpu);
-    uint8_t opcode = read(ram, pc);
-    printf("BAD %02X @ %04X\n", opcode, pc);
-    uint8_t r = 10 / 0;
-}
-
-instruction_t instruction_set[256] = {
-    //    0x00  0x01  0x02  0x03  0x04  0x05  0x06  0x07  0x08  0x09  0x0A  0x0B  0x0C  0x0D  0x0E  0x0F
-    /*0*/ &f00, &f01, &bad, &bad, &bad, &f05, &f06, &bad, &f08, &f09, &f0A, &bad, &bad, &f0D, &f0E, &bad,
-    /*1*/ &f10, &f11, &bad, &bad, &bad, &f15, &f16, &bad, &f18, &f19, &bad, &bad, &bad, &f1D, &f1E, &bad,
-    /*2*/ &f20, &f21, &bad, &bad, &f24, &f25, &f26, &bad, &f28, &f29, &f2A, &bad, &f2C, &f2D, &f2E, &bad,
-    /*3*/ &f30, &f31, &bad, &bad, &bad, &f35, &f36, &bad, &f38, &f39, &bad, &bad, &bad, &f3D, &f3E, &bad,
-    /*4*/ &f40, &f41, &bad, &bad, &bad, &f45, &f46, &bad, &f48, &f49, &f4A, &bad, &f4C, &f4D, &f4E, &bad,
-    /*5*/ &f50, &f51, &bad, &bad, &bad, &f55, &f56, &bad, &f58, &f59, &bad, &bad, &bad, &f5D, &f5E, &bad,
-    /*6*/ &f60, &f61, &bad, &bad, &bad, &f65, &f66, &bad, &f68, &f69, &f6A, &bad, &f6C, &f6D, &f6E, &bad,
-    /*7*/ &f70, &f71, &bad, &bad, &bad, &f75, &f76, &bad, &f78, &f79, &bad, &bad, &bad, &f7D, &f7E, &bad,
-    /*8*/ &bad, &f81, &bad, &bad, &f84, &f85, &f86, &bad, &f88, &f89, &f8A, &bad, &f8C, &f8D, &f8E, &bad,
-    /*9*/ &f90, &f91, &bad, &bad, &f94, &f95, &f96, &bad, &f98, &f99, &f9A, &bad, &bad, &f9D, &bad, &bad,
-    /*A*/ &fA0, &fA1, &fA2, &bad, &fA4, &fA5, &fA6, &bad, &fA8, &fA9, &fAA, &bad, &fAC, &fAD, &fAE, &bad,
-    /*B*/ &fB0, &fB1, &bad, &bad, &fB4, &fB5, &fB6, &bad, &fB8, &fB9, &fBA, &bad, &fBC, &fBD, &fBE, &bad,
-    /*C*/ &fC0, &fC1, &bad, &bad, &fC4, &fC5, &fC6, &bad, &fC8, &fC9, &fCA, &bad, &fCC, &fCD, &fCE, &bad,
-    /*D*/ &fD0, &fD1, &bad, &bad, &bad, &fD5, &fD6, &bad, &fD8, &fD9, &bad, &bad, &bad, &fDD, &fDE, &bad,
-    /*E*/ &fE0, &fE1, &bad, &bad, &fE4, &fE5, &fE6, &bad, &fE8, &fE9, &fEA, &bad, &fEC, &fED, &fEE, &bad,
-    /*F*/ &fF0, &fF1, &bad, &bad, &bad, &fF5, &fF6, &bad, &fF8, &fF9, &bad, &bad, &bad, &fFD, &fFE, &bad};
+address_mode_t address_modes[256] = {
+    //    0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+    /*0*/ IMP, INX, N_D, N_D, N_D, ZPG, ZPG, N_D, IMP, IMM, ACC, N_D, N_D, ABS, ABS, N_D,
+    /*1*/ REL, INY, N_D, N_D, N_D, ZPX, ZPX, N_D, IMP, ABY, N_D, N_D, N_D, ABX, ABX, N_D,
+    /*2*/ ABS, INX, N_D, N_D, ZPG, ZPG, ZPG, N_D, IMP, IMM, ACC, N_D, ABS, ABS, ABS, N_D,
+    /*3*/ REL, INY, N_D, N_D, N_D, ZPX, ZPX, N_D, IMP, ABY, N_D, N_D, N_D, ABX, ABX, N_D,
+    /*4*/ IMP, INY, N_D, N_D, N_D, ZPG, ZPG, N_D, IMP, IMM, ACC, N_D, ABS, ABS, ABS, N_D,
+    /*5*/ REL, INY, N_D, N_D, N_D, ZPX, ZPX, N_D, IMP, ABY, N_D, N_D, N_D, ABX, ABX, N_D,
+    /*6*/ IMP, INX, N_D, N_D, N_D, ZPG, ZPG, N_D, IMP, IMM, ACC, N_D, IND, ABS, ABS, N_D,
+    /*7*/ REL, INY, N_D, N_D, N_D, ZPX, ZPX, N_D, IMP, ABY, N_D, N_D, N_D, ABX, ABX, N_D,
+    /*8*/ N_D, INX, N_D, N_D, ZPG, ZPG, ZPG, N_D, IMP, N_D, IMP, N_D, ABS, ABS, ABS, N_D,
+    /*9*/ REL, INY, N_D, N_D, ZPX, ZPX, ZPY, N_D, IMP, ABY, IMP, N_D, N_D, ABX, N_D, N_D,
+    /*A*/ IMM, INX, IMM, N_D, ZPG, ZPG, ZPG, N_D, IMP, IMM, IMP, N_D, ABS, ABS, ABS, N_D,
+    /*B*/ REL, INY, N_D, N_D, ZPX, ZPX, ZPY, N_D, IMP, ABY, IMP, N_D, ABX, ABX, ABY, N_D,
+    /*C*/ IMM, INX, N_D, N_D, ZPG, ZPG, ZPG, N_D, IMP, IMM, IMP, N_D, ABS, ABS, ABS, N_D,
+    /*D*/ REL, INY, N_D, N_D, N_D, ZPX, ZPX, N_D, IMP, ABY, N_D, N_D, N_D, ABX, ABX, N_D,
+    /*E*/ IMM, INX, N_D, N_D, ZPG, ZPG, ZPG, N_D, IMP, IMM, IMP, N_D, ABS, ABS, ABS, N_D,
+    /*F*/ REL, INY, N_D, N_D, N_D, ZPX, ZPX, N_D, IMP, ABY, N_D, N_D, N_D, ABX, ABX, N_D};
 
 uint8_t instruction_cycles[256] = {
     /*    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */
@@ -126,7 +68,7 @@ uint8_t instruction_cycles[256] = {
     /*7*/ 2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0,
     /*8*/ 0, 6, 0, 0, 3, 3, 3, 0, 2, 0, 2, 0, 4, 4, 4, 0,
     /*9*/ 2, 6, 0, 0, 4, 4, 4, 0, 2, 5, 2, 0, 0, 5, 0, 0,
-    /*A*/ 2, 6, 0, 0, 3, 3, 3, 0, 2, 2, 2, 0, 4, 4, 4, 0,
+    /*A*/ 2, 6, 2, 0, 3, 3, 3, 0, 2, 2, 2, 0, 4, 4, 4, 0,
     /*B*/ 2, 5, 0, 0, 4, 4, 4, 0, 2, 4, 2, 0, 4, 4, 4, 0,
     /*C*/ 2, 6, 0, 0, 3, 3, 5, 0, 2, 2, 2, 0, 4, 4, 6, 0,
     /*D*/ 2, 5, 0, 0, 0, 4, 6, 0, 2, 4, 0, 0, 0, 4, 7, 0,
@@ -145,25 +87,29 @@ uint8_t instruction_sizes[256] = {
     /*7*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
     /*8*/ 0, 2, 0, 0, 2, 2, 2, 0, 1, 0, 1, 0, 3, 3, 3, 0,
     /*9*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 3, 1, 0, 0, 3, 0, 0,
-    /*A*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
+    /*A*/ 2, 2, 2, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /*B*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 3, 1, 0, 3, 3, 3, 0,
     /*C*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /*D*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0,
     /*E*/ 2, 2, 0, 0, 2, 2, 2, 0, 1, 2, 1, 0, 3, 3, 3, 0,
     /*F*/ 2, 2, 0, 0, 0, 2, 2, 0, 1, 3, 0, 0, 0, 3, 3, 0};
 
-void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value)
+cpu_6510_t *create_cpu()
 {
-    if (value)
-        cpu->sr = cpu->sr | flag;
-    else
-        cpu->sr = cpu->sr & ~flag;
+    cpu_6510_t *cpu = malloc(sizeof(cpu_6510_t));
+    if (cpu)
+        return cpu;
+    return NULL;
 }
 
-bool get_flag(cpu_6510_t *cpu, uint8_t flag)
+void destroy_cpu(cpu_6510_t *cpu)
 {
-    return cpu->sr & flag;
+    if (cpu)
+        free(cpu);
 }
+
+void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value) {if (value) cpu->sr = cpu->sr | flag; else cpu->sr = cpu->sr & ~flag; }
+bool get_flag(cpu_6510_t *cpu, uint8_t flag){ return cpu->sr & flag; }
 
 void set_carry_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_C, value); }
 void set_zero_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_Z, value); }
@@ -273,10 +219,13 @@ uint8_t fetch_instruction(cpu_6510_t *cpu, memory_t ram)
     return ram[cpu->pc];
 }
 
-instruction_t decode_instruction(uint8_t opcode)
+execute_t decode_instruction(uint8_t opcode)
 {
     return instruction_set[opcode];
 }
+
+uint16_t decode_address_accumulator(cpu_6510_t *cpu, memory_t ram){return 0;}
+uint16_t decode_address_implied(cpu_6510_t *cpu, memory_t ram){return 0;}
 
 uint16_t decode_address_immediate(cpu_6510_t *cpu, memory_t ram)
 {
@@ -395,7 +344,7 @@ void log_cpu(cpu_6510_t *cpu, memory_t ram)
     flags[7] = get_carry_flag(cpu) ? 'x' : '.';
     flags[8] = 0;
 
-    printf("\033[2J\033[1;1H");
+    //printf("\033[2J\033[1;1H");
     printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
     printf("PC: %04X SP: %02X SR: %02X %s %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
     printf("%04X %04X %04X %04X\n", cpu->pc, cpu->pc + 1, cpu->pc + 2, cpu->pc + 3);
@@ -404,12 +353,11 @@ void log_cpu(cpu_6510_t *cpu, memory_t ram)
 
 bool cpu_step(cpu_6510_t *cpu, memory_t ram)
 {
-    log_cpu(cpu, ram);
     uint8_t opcode = ram[cpu->pc];
-    instruction_t execute = instruction_set[opcode];
-    execute(cpu, ram);
+    execute_t execute = instruction_set[opcode];
+    address_mode_t decode_address = address_modes[opcode];
+    uint16_t address = decode_address(cpu, ram);
     increment_cycles(cpu, instruction_cycles[opcode]);
     increment_program_counter(cpu, instruction_sizes[opcode]);
-
-    return true;
+    return execute(cpu, ram, address);
 }

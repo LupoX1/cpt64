@@ -58,16 +58,17 @@ int main(int argc, char* argv[]) {
     printf("Description: %s\n", APP_DESCRIPTION);
     printf("\n--- Build without SDL3 ---\n");
     
-    printf("Running without SDL3 support...\n");
-
+    printf("Running without SDL3 support... HIT ENTER TO STEP\n");
+    getchar();
+    
     C64_Core *core = c64_core_create();
     c64_core_reset(core);
-
-    for(uint8_t i = 0; i<100; i++)
+    
+    do
     {
+      c64_log_status(core);
       getchar();
-      c64_core_step(core);
-    }
+    }while(c64_core_step(core));
 
     dump_data(core);
 

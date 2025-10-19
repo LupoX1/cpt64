@@ -145,3 +145,5 @@ add_custom_target(clean-external
     COMMAND ${CMAKE_COMMAND} -E remove_directory "${FETCHCONTENT_BASE_DIR}"
     COMMENT "Eliminazione dipendenze esterne"
 )
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/roms DESTINATION ${CMAKE_BINARY_DIR})
