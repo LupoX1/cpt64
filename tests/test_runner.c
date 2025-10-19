@@ -70,7 +70,7 @@ void run_functional_test(C64_Core *core) {
     printf("Running");
     fflush(stdout);
     
-    log_cpu(core->cpu, core->ram);
+    //log_cpu(core->cpu, core->ram);
 
     while (1) {
         uint16_t current_pc = read_program_counter(core->cpu);
@@ -95,6 +95,7 @@ void run_functional_test(C64_Core *core) {
                     printf("Total cycles: %lu\n", read_cycles(core->cpu) - start_cycles);
                 } else {
                     printf("✗✗✗ FAILURE ✗✗✗\n");
+                    printf("Total cycles: %lu\n", read_cycles(core->cpu) - start_cycles);
                     printf("Test trapped at PC=$%04X\n", current_pc);
                     printf("This usually means an instruction failed\n");
                     printf("\nCPU State:\n");
@@ -131,7 +132,8 @@ void run_functional_test(C64_Core *core) {
         
         // Esegui un'istruzione
         c64_core_step(core);
-        log_cpu(core->cpu, core->ram);
+        //if(read_cycles(core->cpu) - start_cycles > 84000000)
+        //log_cpu(core->cpu, core->ram);
         
         // Timeout check
         if (read_cycles(core->cpu) - start_cycles > max_cycles) {

@@ -9,15 +9,32 @@ bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 
     if (decimal_mode)
     {
-        uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
-        uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
-        uint8_t c = a + b + (carry ? 1 : 0);
-        uint8_t result = c % 100;
-
+       // BCD addition
+        int al = (acc & 0x0F) + (value & 0x0F) + (carry ? 1 : 0);
+        int ah = (acc >> 4) + (value >> 4);
+        
+        if (al > 9) {
+            al -= 10;
+            ah++;
+        }
+        
+        // Note: Z and N flags are based on binary result
+        uint16_t binary_result = acc + value + (carry ? 1 : 0);
+        set_zero_flag(cpu, (binary_result & 0xFF) == 0);
+        set_negative_flag(cpu, (binary_result & 0x80) != 0);
+        
+        bool overflow = ((acc ^ binary_result) & (value ^ binary_result) & 0x80) != 0;
+        set_overflow_flag(cpu, overflow);
+        
+        if (ah > 9) {
+            ah -= 10;
+            set_carry_flag(cpu, true);
+        } else {
+            set_carry_flag(cpu, false);
+        }
+        
+        uint8_t result = ((ah & 0x0F) << 4) | (al & 0x0F);
         write_accumulator(cpu, result);
-        set_zero_flag(cpu, result == 0);
-        set_carry_flag(cpu, c > 99);
-        set_negative_flag(cpu, 0);
     }
     else
     {
@@ -499,17 +516,35 @@ bool sbc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     bool decimal_mode = get_decimal_flag(cpu);
     bool carry = get_carry_flag(cpu);
     uint8_t acc = read_accumulator(cpu);
+    
     if (decimal_mode)
     {
-        uint8_t a = (acc & 0xF0) * 10 + (acc & 0x0F);
-        uint8_t b = ((value & 0xF0) >> 4) * 10 + (value & 0x0F);
-        int8_t c = a - b - (carry ? 1 : 0);
-        int8_t result = c < 0 ? c + 100 : c;
-
+        // BCD subtraction
+        int al = (acc & 0x0F) - (value & 0x0F) - (carry ? 0 : 1);
+        int ah = (acc >> 4) - (value >> 4);
+        
+        if (al < 0) {
+            al += 10;
+            ah--;
+        }
+        
+        // Note: Z and N flags are based on binary result
+        int16_t binary_result = acc - value - (carry ? 0 : 1);
+        set_zero_flag(cpu, (binary_result & 0xFF) == 0);
+        set_negative_flag(cpu, (binary_result & 0x80) != 0);
+        
+        bool overflow = ((acc ^ value) & (acc ^ binary_result) & 0x80) != 0;
+        set_overflow_flag(cpu, overflow);
+        
+        if (ah < 0) {
+            ah += 10;
+            set_carry_flag(cpu, false);  // Borrow occurred
+        } else {
+            set_carry_flag(cpu, true);   // No borrow
+        }
+        
+        uint8_t result = ((ah & 0x0F) << 4) | (al & 0x0F);
         write_accumulator(cpu, result);
-        set_zero_flag(cpu, result == 0);
-        set_carry_flag(cpu, c < 0);
-        set_negative_flag(cpu, 0);
     }
     else
     {
