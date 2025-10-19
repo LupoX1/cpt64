@@ -6,7 +6,21 @@
 #include "cpu.h"
 #include "memory.h"
 
+C64_Core *c64_core_create()
+{
+  C64_Core *core = calloc(1, sizeof(C64_Core));
+  if (!core)
+    return NULL;
+  core->cpu = create_cpu();
+  return core;
+}
 
+void c64_core_destroy(C64_Core *core)
+{
+  if (!core) return;
+  destroy_cpu(core->cpu);
+  free(core);
+}
 
 void load_data(char *path, uint8_t *location, size_t size)
 {
@@ -30,22 +44,6 @@ void dump_data(C64_Core *core)
   dump_memory(core->ram, file);
   
   fclose(file);
-}
-
-C64_Core *c64_core_create()
-{
-  C64_Core *core = calloc(1, sizeof(C64_Core));
-  if (!core)
-    return NULL;
-  core->cpu = create_cpu();
-  return core;
-}
-
-void c64_core_destroy(C64_Core *core)
-{
-  if (!core) return;
-  destroy_cpu(core->cpu);
-  free(core);
 }
 
 void c64_core_load_roms(C64_Core *core)

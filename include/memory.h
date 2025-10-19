@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef uint8_t memory_t[0xFFFF];
+typedef uint8_t memory_t[0x10000];
 
 uint8_t read(memory_t memory, uint16_t address);
 void write(memory_t memory, uint16_t address, uint8_t value);

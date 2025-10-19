@@ -54,6 +54,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 #include "c64_core.h"
 
+// const uint64_t ns_per_cycle = 1000000000 / 985000;
+
 C64_Core *core;
 
 void segfault_handler_extended(int sig, siginfo_t *si, void *unused) {
@@ -93,7 +95,7 @@ int main(int argc, char* argv[]) {
     do
     {
       //dump_data(core);
-      c64_log_status(core);
+      //c64_log_status(core);
       //getchar();
     }while(c64_core_step(core));
 

@@ -18,9 +18,8 @@ struct cpu_6510_t
     bool irq;
 };
 
-
 char instructions[256][4] = {
-    //    0x0  0x1  0x2  0x3  0x4  0x5  0x6  0x7  0x8  0x9  0xA  0xB  0xC  0xD  0xE  0xF
+    //     0x0      0x1      0x2      0x3      0x4      0x5      0x6      0x7      0x8      0x9      0xA      0xB      0xC      0xD      0xE      0xF
     /*0*/ "brk\0", "ora\0", "bad\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0", "php\0", "ora\0", "asl\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0",
     /*1*/ "bpl\0", "ora\0", "bad\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0", "clc\0", "ora\0", "bad\0", "bad\0", "bad\0", "ora\0", "asl\0", "bad\0",
     /*2*/ "jsr\0", "and\0", "bad\0", "bad\0", "bit\0", "and\0", "rol\0", "bad\0", "plp\0", "and\0", "rol\0", "bad\0", "bit\0", "and\0", "rol\0", "bad\0",
@@ -378,8 +377,80 @@ void log_cpu(cpu_6510_t *cpu, memory_t ram)
     printf("  %02X   %02X   %02X   %02X\n", ram[cpu->pc], ram[cpu->pc + 1], ram[cpu->pc + 2], ram[cpu->pc + 3]);
 }
 
+bool handle_reset(cpu_6510_t *cpu, memory_t ram)
+{
+    //TODO complete reset routine
+    cpu->reset = false;
+
+    uint8_t sr = read_sr(cpu);
+    sr = sr & ~FLAG_B;
+    sr = sr | FLAG_U;
+
+    uint16_t pc = read_program_counter(cpu);
+    push(cpu, ram, (uint8_t)(pc >> 8));
+    push(cpu, ram, (uint8_t)(pc & 0xFF));
+    push(cpu, ram, sr);
+
+    set_interrupt_flag(cpu, true);
+    
+    uint16_t vector = (ram[0xFFFD] << 8) | ram[0xFFFC];
+    write_program_counter(cpu, vector);
+
+    return true;
+}
+
+bool handle_nmi(cpu_6510_t *cpu, memory_t ram)
+{
+    cpu->nmi = false;
+
+    uint8_t sr = read_sr(cpu);
+    sr = sr & ~FLAG_B;
+    sr = sr | FLAG_U;
+
+    uint16_t pc = read_program_counter(cpu);
+    push(cpu, ram, (uint8_t)(pc >> 8));
+    push(cpu, ram, (uint8_t)(pc & 0xFF));
+    push(cpu, ram, sr);
+
+    set_interrupt_flag(cpu, true);
+    
+    uint16_t vector = (ram[0xFFFB] << 8) | ram[0xFFFA];
+    write_program_counter(cpu, vector);
+
+    increment_cycles(cpu, 7);
+
+    return true;
+}
+
+bool handle_irq(cpu_6510_t *cpu, memory_t ram)
+{
+    cpu->irq = false;
+
+    uint8_t sr = read_sr(cpu);
+    sr = sr & ~FLAG_B;
+    sr = sr | FLAG_U;
+
+    uint16_t pc = read_program_counter(cpu);
+    push(cpu, ram, (uint8_t)(pc >> 8));
+    push(cpu, ram, (uint8_t)(pc & 0xFF));
+    push(cpu, ram, sr);
+
+    set_interrupt_flag(cpu, true);
+    
+    uint16_t vector = (ram[0xFFFF] << 8) | ram[0xFFFE];
+    write_program_counter(cpu, vector);
+
+    increment_cycles(cpu, 7);
+
+    return true;
+}
+
 bool cpu_step(cpu_6510_t *cpu, memory_t ram)
 {
+    if(cpu->reset) return handle_reset(cpu, ram);
+    if(cpu->nmi) return handle_nmi(cpu, ram);
+    if(cpu->irq && !get_interrupt_flag(cpu)) return handle_irq(cpu, ram);
+
     uint8_t opcode = ram[cpu->pc];
     execute_t execute = instruction_set[opcode];
     address_mode_t decode_address = address_modes[opcode];
@@ -387,4 +458,19 @@ bool cpu_step(cpu_6510_t *cpu, memory_t ram)
     increment_cycles(cpu, instruction_cycles[opcode]);
     increment_program_counter(cpu, instruction_sizes[opcode]);
     return execute(cpu, ram, address);
+}
+
+void reset_request(cpu_6510_t *cpu)
+{
+    cpu->reset = true;
+}
+
+void interrupt_request_non_maskable(cpu_6510_t *cpu)
+{
+    cpu->nmi = true;
+}
+
+void interrupt_request(cpu_6510_t *cpu)
+{
+    cpu->irq = true;
 }
