@@ -1,26 +1,57 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdint.h>
+#include "core/system.h"
 
-#include "c64_core.h"
-#include "cpu.h"
-#include "memory.h"
-
-C64_Core *c64_core_create()
+struct c64_system_t
 {
-  C64_Core *core = calloc(1, sizeof(C64_Core));
-  if (!core)
-    return NULL;
-  core->cpu = create_cpu();
-  return core;
+    bool ok;
+};
+
+c64_system_t *c64_create()
+{
+    printf("c64_create\n");
+    c64_system_t *c64_system = malloc(sizeof(c64_system_t));
+
+    return c64_system;
 }
 
-void c64_core_destroy(C64_Core *core)
+bool c64_load_program(c64_system_t *c64_system, char *program_file, uint16_t address)
 {
-  if (!core) return;
-  destroy_cpu(core->cpu);
-  free(core);
+    printf("c64_load_program\n");
+    return false;
 }
+
+void c64_reset(c64_system_t *c64_system)
+{
+    printf("c64_reset\n");
+}
+
+bool c64_step(c64_system_t *c64_system)
+{
+    printf("c64_step\n");
+    return false;
+}
+
+uint64_t c64_get_cycles(c64_system_t *c64_system)
+{
+    printf("c64_step\n");
+    return 0;
+}
+
+void c64_dump_state(c64_system_t *c64_system, char* log_file)
+{
+    printf("c64_dump_state to %s\n", log_file);
+}
+
+void c64_destroy(c64_system_t *c64_system)
+{
+    printf("\n");
+    if(!c64_system) return;
+    free(c64_system);
+}
+
+/*
 
 void load_data(char *path, uint8_t *location, size_t size)
 {
@@ -98,3 +129,7 @@ void c64_log_status(C64_Core *core)
 {
   log_cpu(core->cpu, core->ram);
 }
+
+
+
+*/

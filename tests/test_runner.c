@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "c64_core.h"
+#include "c64.h"
 
 // Assumo che tu abbia questi nel tuo emulatore
 // Adatta i nomi alle tue strutture
@@ -30,6 +30,7 @@ void reset_core(Core *core);
 */
 
 // Carica un file binario in memoria
+/*
 bool load_test_binary(C64_Core *core, const char *filename, uint16_t addr) {
     FILE *f = fopen(filename, "rb");
     if (!f) {
@@ -217,3 +218,8 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+*/
+
+void main(void)
+{}

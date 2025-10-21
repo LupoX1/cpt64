@@ -1,4 +1,8 @@
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include "c64.h"
 #include "config.h"
 
 #ifdef USE_SDL
@@ -48,61 +52,88 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 #else
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
+static c64_system_t *g_c64 = NULL;
 
-#include "c64_core.h"
-
-// const uint64_t ns_per_cycle = 1000000000 / 985000;
-
-C64_Core *core;
-
-void segfault_handler_extended(int sig, siginfo_t *si, void *unused) {
-    printf("SIGSEGV catturato!\n");
-    printf("Indirizzo che ha causato l'errore: %p\n", si->si_addr);
-    printf("Codice errore: %d\n", si->si_code);
-
-    dump_data(core);
+void sigfault_handler(int sig, siginfo_t *si, void *unused)
+{
+    printf("\n=== SIGSEGV Caught! ===\n");
+    printf("Fault address: %p\n", si->si_addr);
+    printf("Dumping state...\n");
+    
+    if (g_c64) {
+        c64_dump_state(g_c64, "crash_dump.txt");
+        printf("State dumped to crash_dump.txt\n");
+    }
     
     exit(1);
 }
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char *argv[])
+{
+    // Setup signal handler
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
-    sa.sa_sigaction = segfault_handler_extended;
+    sa.sa_sigaction = sigfault_handler;
+    sigaction(SIGSEGV, &sa, NULL);
     
-    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
-        perror("sigaction");
+    printf("=== %s v%s ===\n", APP_NAME, APP_VERSION);
+    printf("%s\n", APP_DESCRIPTION);
+    printf("Build: Console mode (no SDL)\n\n");
+    
+    // Crea sistema
+    g_c64 = c64_create();
+    if (!g_c64) {
+        fprintf(stderr, "Failed to create C64 system\n");
         return 1;
     }
-
-    printf("=== %s ===\n", APP_NAME);
-    printf("Version: %s\n", APP_VERSION);
-    printf("Description: %s\n", APP_DESCRIPTION);
-    printf("\n--- Build without SDL3 ---\n");
     
-    printf("Running without SDL3 support... HIT ENTER TO STEP\n");
-    getchar();
-    printf("\033[2J\033[1;1H");
+    // Reset
+    printf("Resetting C64...\n");
+    c64_reset(g_c64);
     
-    core = c64_core_create();
-    c64_core_reset(core);
+    // Carica programma se specificato
+    if (argc > 1) {
+        uint16_t addr = 0x0801;  // Default BASIC start
+        if (argc > 2) {
+            addr = (uint16_t)strtol(argv[2], NULL, 16);
+        }
+        
+        printf("Loading %s at $%04X\n", argv[1], addr);
+        if (!c64_load_program(g_c64, argv[1], addr)) {
+            fprintf(stderr, "Failed to load program\n");
+            c64_destroy(g_c64);
+            return 1;
+        }
+    }
     
-    do
-    {
-      //dump_data(core);
-      //c64_log_status(core);
-      //getchar();
-    }while(c64_core_step(core));
-
-    dump_data(core);
-
-    c64_core_destroy(core);
-
+    // Loop principale
+    printf("\nRunning... (Press Ctrl+C to stop)\n");
+    printf("Cycles: %lu\r", c64_get_cycles(g_c64));
+    fflush(stdout);
+    
+    uint64_t last_report = 0;
+    while (c64_step(g_c64)) {
+        uint64_t cycles = c64_get_cycles(g_c64);
+        
+        // Report ogni 100k cicli
+        if (cycles - last_report > 100000) {
+            printf("Cycles: %lu\r", cycles);
+            fflush(stdout);
+            last_report = cycles;
+        }
+    }
+    
+    printf("\n\nExecution stopped at %lu cycles\n", c64_get_cycles(g_c64));
+    
+    // Dump finale
+    printf("Dumping final state...\n");
+    c64_dump_state(g_c64, "final_dump.txt");
+    printf("State saved to final_dump.txt\n");
+    
+    // Cleanup
+    c64_destroy(g_c64);
+    
     return 0;
 }
 

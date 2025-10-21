@@ -1,4 +1,4 @@
-#include "opcodes.h"
+#include "../opcodes.h"
 
 bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
 {

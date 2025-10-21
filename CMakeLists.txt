@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Leggi la configurazione dal file project.conf
+# Carica configurazione progetto
 include(${CMAKE_CURRENT_SOURCE_DIR}/project.conf)
 
 project(
@@ -18,11 +18,11 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Cartella per le dipendenze esterne (non viene eliminata con clean)
-set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external" CACHE PATH "External dependencies directory")
-set(FETCHCONTENT_FULLY_DISCONNECTED OFF CACHE BOOL "Allow FetchContent to download")
+# Directory per dipendenze esterne
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external" 
+    CACHE PATH "External dependencies directory")
 
-# Determina il sistema operativo
+# Determina piattaforma
 if(WIN32)
     set(PLATFORM "windows")
 elseif(APPLE)
@@ -31,133 +31,165 @@ else()
     set(PLATFORM "linux")
 endif()
 
+message(STATUS "=== C64 Emulator Build Configuration ===")
 message(STATUS "Platform: ${PLATFORM}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Use SDL: ${USE_SDL}")
-message(STATUS "External deps: ${FETCHCONTENT_BASE_DIR}")
+message(STATUS "C Compiler: ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
 
 # ============================================================================
-# Opzioni di compilazione
+# Opzioni
 # ============================================================================
 
-option(USE_SDL "Usa SDL3" ON)
+option(USE_SDL "Enable SDL3 support" ON)
+option(BUILD_TESTS "Build test suite" ON)
 
-# Flags di compilazione per Debug e Release
+message(STATUS "USE_SDL: ${USE_SDL}")
+message(STATUS "BUILD_TESTS: ${BUILD_TESTS}")
+
+# ============================================================================
+# Flags di compilazione
+# ============================================================================
+
 set(CMAKE_C_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 if(MSVC)
     set(CMAKE_C_FLAGS_DEBUG "/Zi /Od /W4")
-    set(CMAKE_C_FLAGS_RELEASE "/O2")
+    set(CMAKE_C_FLAGS_RELEASE "/O2 /DNDEBUG")
 endif()
 
 # ============================================================================
-# Gestione delle dipendenze (SDL3)
+# Dipendenze esterne (SDL3)
 # ============================================================================
 
 if(USE_SDL)
     find_package(SDL3 QUIET)
     
     if(NOT SDL3_FOUND)
-        message(STATUS "SDL3 non trovata, scarico automaticamente...")
+        message(STATUS "SDL3 not found, downloading...")
         include(FetchContent)
         FetchContent_Declare(SDL3
             URL https://github.com/libsdl-org/SDL/releases/download/release-3.2.24/SDL3-3.2.24.tar.gz
+            DOWNLOAD_EXTRACT_TIMESTAMP ON
         )
         FetchContent_MakeAvailable(SDL3)
-        
-        # Imposta SDL3_LIBRARIES e SDL3_INCLUDE_DIRS manualmente se necessario
-        if(NOT SDL3_LIBRARIES)
-            set(SDL3_LIBRARIES SDL3::SDL3)
-        endif()
+        message(STATUS "SDL3 downloaded to ${FETCHCONTENT_BASE_DIR}")
+    else()
+        message(STATUS "Using system SDL3")
     endif()
 endif()
 
 # ============================================================================
-# Directory di include
+# Libreria Core C64
 # ============================================================================
 
-set(COMMON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
-include_directories(${COMMON_INCLUDE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/src")
-
-# ============================================================================
-# Struttura dei moduli
-# ============================================================================
-
-# File sorgenti da tutti i moduli
-file(GLOB_RECURSE SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+add_library(c64_core STATIC
+    # Core
+    src/core/bus.c
+    src/core/system.c
+    
+    # Memory
+    src/memory/memory.c
+    
+    # CPU
+    src/cpu/cpu6510.c
+    src/cpu/cpu_internal.c
+    src/cpu/addressing.c
+    src/cpu/opcodes.c
+    src/cpu/tables.c
 )
 
-# ============================================================================
-# Generazione del file config con versione
-# ============================================================================
+target_include_directories(c64_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
 
+# Genera config.h
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/config.h"
 )
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 # ============================================================================
-# Creazione dell'eseguibile
+# Eseguibile principale
 # ============================================================================
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} src/main.c)
 
-# Aggiungi la flag SDL al compilatore se abilitato
+target_link_libraries(${PROJECT_NAME} PRIVATE c64_core)
+
 if(USE_SDL)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SDL=1)
-    target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
+    message(STATUS "Main executable built with SDL3 support")
+else()
+    message(STATUS "Main executable built in console mode")
 endif()
 
-# Include per il progetto principale
-target_include_directories(${PROJECT_NAME} PRIVATE ${COMMON_INCLUDE_DIR})
+# ============================================================================
+# Test Suite
+# ============================================================================
+
+if(BUILD_TESTS)
+    add_executable(c64_tests tests/test_runner.c)
+    
+    target_link_libraries(c64_tests PRIVATE c64_core)
+    
+    # Copia risorse test
+    add_custom_command(TARGET c64_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources
+            $<TARGET_FILE_DIR:c64_tests>/tests/resources
+        COMMENT "Copying test resources to build directory"
+    )
+    
+    message(STATUS "Test suite enabled")
+endif()
+
+# ============================================================================
+# Copia ROM
+# ============================================================================
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/roms 
+     DESTINATION ${CMAKE_BINARY_DIR})
+message(STATUS "ROMs copied to build directory")
 
 # ============================================================================
 # Installazione
 # ============================================================================
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
-install(DIRECTORY ${COMMON_INCLUDE_DIR}/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION include 
+        FILES_MATCHING PATTERN "*.h")
+
+if(BUILD_TESTS)
+    install(TARGETS c64_tests DESTINATION bin)
+endif()
 
 # ============================================================================
-# Output
+# Target custom
 # ============================================================================
 
+# Clean completo (build + external)
+add_custom_target(clean-all
+    COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E remove_directory "${FETCHCONTENT_BASE_DIR}"
+    COMMENT "Cleaning build and external dependencies"
+)
+
+# ============================================================================
+# Summary
+# ============================================================================
+
+message(STATUS "")
+message(STATUS "=== Build Summary ===")
 message(STATUS "Target: ${PROJECT_NAME}")
 message(STATUS "Version: ${PROJECT_VERSION}")
-message(STATUS "Description: ${PROJECT_DESCRIPTION}")
 message(STATUS "Output directory: ${CMAKE_BINARY_DIR}")
-
-# ============================================================================
-# Target custom per pulizia selettiva
-# ============================================================================
-
-add_custom_target(clean-all
-    COMMAND ${CMAKE_BUILD_TOOL} clean
-    COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}"
-    COMMENT "Pulizia completa (build eliminato, external conservato)"
-)
-
-add_custom_target(clean-external
-    COMMAND ${CMAKE_COMMAND} -E remove_directory "${FETCHCONTENT_BASE_DIR}"
-    COMMENT "Eliminazione dipendenze esterne"
-)
-
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/roms DESTINATION ${CMAKE_BINARY_DIR})
-
-
-# --- Programma di test ---
-add_library(core src/cpu.c src/memory.c src/opcodes.c src/c64_core.c)
-add_executable(tests_exec tests/test_runner.c)
-target_link_libraries(tests_exec PRIVATE core)
-
-# Copia le risorse di test accanto all'eseguibile del test
-add_custom_command(TARGET tests_exec POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/resources
-        $<TARGET_FILE_DIR:tests_exec>/tests/resources
-    COMMENT "Copia delle risorse di test nella directory di build"
-)
+message(STATUS "")
+message(STATUS "Build with:")
+message(STATUS "  cmake --build ${CMAKE_BINARY_DIR}")
+message(STATUS "")
+message(STATUS "Run tests:")
+message(STATUS "  ${CMAKE_BINARY_DIR}/c64_tests")
+message(STATUS "")
