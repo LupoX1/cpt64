@@ -40,19 +40,18 @@ c64_bus_t *bus_create()
     return bus;
 }
 
-void bus_load_roms(c64_bus_t *bus)
+bool bus_load_roms(c64_bus_t *bus)
 {
     if (!bus)
-        return;
-    printf("bus_load_roms\n");
+        return false;
+    return memory_load_roms(bus->mem);
 }
 
 bool bus_load_binary(c64_bus_t *bus, const char *program_file, uint16_t address)
 {
     if (!bus)
         return false;
-    printf("bus_load_binary\n");
-    return false;
+    return memory_load_binary(bus->mem, program_file, address);
 }
 
 /*

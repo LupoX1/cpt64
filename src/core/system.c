@@ -34,7 +34,7 @@ bool c64_load_program(c64_system_t *sys, const char *program_file, uint16_t addr
 void c64_reset(c64_system_t *sys)
 {
     if(!sys) return;
-    bus_load_roms(sys->bus);
+    if(!bus_load_roms(sys->bus)) return;
     bus_reset(sys->bus);
 }
 

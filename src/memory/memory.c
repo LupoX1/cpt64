@@ -8,6 +8,8 @@ struct memory
   uint8_t banking;
 };
 
+bool load_file(const char *path, uint8_t *dest, size_t max_size);
+
 memory_t *memory_create()
 {
   memory_t *mem = malloc(sizeof(memory_t));
@@ -17,7 +19,62 @@ memory_t *memory_create()
   mem->banking = 0x37;
 }
 
-void memory_dump(memory_t *mem, FILE *file)
+uint8_t read_direct(memory_t *mem, uint16_t address)
+{
+  return mem->ram[address];
+}
+
+void write_direct(memory_t *mem, uint16_t address, uint8_t value)
+{
+  mem->ram[address] = value;
+}
+
+bool memory_load_roms(memory_t *mem)
+{
+  bool ok = true;
+    
+    // BASIC ROM $A000-$BFFF
+    ok &= load_file("roms/basic.bin", &mem->ram[0xA000], 0x2000);
+    
+    // KERNAL ROM $E000-$FFFF
+    ok &= load_file("roms/kernal.bin", &mem->ram[0xE000], 0x2000);
+    
+    // Character ROM $D000-$DFFF
+    ok &= load_file("roms/chargen.bin", &mem->ram[0xD000], 0x1000);
+    
+    if (ok) {
+        printf("ROMs loaded successfully\n");
+    }
+    
+    return ok;
+}
+
+bool memory_load_binary(memory_t *mem, const char *path, uint16_t address)
+{
+   FILE *f = fopen(path, "rb");
+    if (!f) {
+        fprintf(stderr, "Error: Cannot open %s\n", path);
+        return false;
+    }
+    
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    
+    size_t available = RAM_SIZE - address;
+    if (size > (long)available) {
+        fprintf(stderr, "Warning: File truncated (%ld > %zu)\n", size, available);
+        size = available;
+    }
+    
+    size_t read = fread(&mem->ram[address], 1, size, f);
+    fclose(f);
+    
+    printf("Loaded %zu bytes at $%04X\n", read, address);
+    return read == (size_t)size;
+}
+
+void memory_dump_(memory_t *mem, FILE *file)
 {
   fprintf(file, "      00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F                   \n");
 
@@ -58,14 +115,38 @@ void memory_dump(memory_t *mem, FILE *file)
   }
 }
 
-uint8_t read_direct(memory_t *mem, uint16_t address)
+void memory_dump(memory_t *mem, FILE *out)
 {
-  return mem->ram[address];
-}
+  fprintf(out, "      00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F\n");
 
-void write_direct(memory_t *mem, uint16_t address, uint8_t value)
-{
-  mem->ram[address] = value;
+  for (uint32_t i = 0; i < RAM_SIZE; i += 16)
+  {
+    fprintf(out, "%04X  ", i);
+
+    // Hex dump
+    for (int j = 0; j < 8; j++)
+    {
+      fprintf(out, "%02X ", mem->ram[i + j]);
+    }
+    fprintf(out, " ");
+    for (int j = 8; j < 16; j++)
+    {
+      fprintf(out, "%02X ", mem->ram[i + j]);
+    }
+
+    fprintf(out, " ");
+
+    // ASCII dump
+    for (int j = 0; j < 16; j++)
+    {
+      char c = mem->ram[i + j];
+      if (c < 32 || c > 126)
+        c = '.';
+      fprintf(out, "%c", c);
+    }
+
+    fprintf(out, "\n");
+  }
 }
 
 void memory_destroy(memory_t *mem)
@@ -75,49 +156,26 @@ void memory_destroy(memory_t *mem)
   free(mem);
 }
 
-/*
-
-
-
-
-void load_data(char *path, uint8_t *location, size_t size)
+bool load_file(const char *path, uint8_t *dest, size_t max_size)
 {
-  FILE *data = fopen(path, "rb");
-  if(!data) return;
-
-  uint8_t buffer[size];
-  fread(buffer, sizeof(uint8_t), size, data);
-
-  fclose(data);
-
-  memcpy(location, buffer, size);
-}
-
-void c64_core_load_roms(C64_Core *core)
-{
-  load_data("roms/basic.bin",core->ram + 0xA000, 0x2000);
-  load_data("roms/kernal.bin",core->ram + 0xE000, 0x2000);
-  load_data("roms/chargen.bin",core->ram+0xD000, 0x1000);
-}
-
-bool c64_load_binary(C64_Core *core, const char *filename, uint16_t addr)
-{
-    FILE *f = fopen(filename, "rb");
+    FILE *f = fopen(path, "rb");
     if (!f) {
-        fprintf(stderr, "Error: Cannot open %s\n", filename);
+        fprintf(stderr, "Error: Cannot open %s\n", path);
         return false;
     }
-
+    
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
     fseek(f, 0, SEEK_SET);
-
-    size_t read = fread(&core->ram[addr], 1, size, f);
+    
+    if (size > (long)max_size) {
+        fprintf(stderr, "Error: File too large (%ld > %zu)\n", size, max_size);
+        fclose(f);
+        return false;
+    }
+    
+    size_t read = fread(dest, 1, size, f);
     fclose(f);
-
-    printf("Loaded %ld bytes at $%04X\n", read, addr);
-    return read == size;
+    
+    return read == (size_t)size;
 }
-
-
-*/
