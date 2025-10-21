@@ -15,16 +15,29 @@ typedef struct
 
 struct c64_bus
 {
-    int c;
+    cpu_t *cpu;
+    memory_t *mem;
 };
 
 c64_bus_t *bus_create()
 {
-    printf("bus_create\n");
-    c64_bus_t *c64_bus = malloc(sizeof(c64_bus_t));
-    if (!c64_bus)
+    c64_bus_t *bus = malloc(sizeof(c64_bus_t));
+    if (!bus) return NULL;
+    bus->cpu = cpu_create();
+    if(!bus->cpu)
+    {
+        bus_destroy(bus);
         return NULL;
-    return c64_bus;
+    }
+
+    bus->mem = memory_create();
+    if(!bus->mem)
+    {
+        bus_destroy(bus);
+        return NULL;
+    }
+
+    return bus;
 }
 
 void bus_load_roms(c64_bus_t *bus)
@@ -43,46 +56,6 @@ bool bus_load_binary(c64_bus_t *bus, const char *program_file, uint16_t address)
 }
 
 /*
-
-
-void load_data(char *path, uint8_t *location, size_t size)
-{
-  FILE *data = fopen(path, "rb");
-  if(!data) return;
-
-  uint8_t buffer[size];
-  fread(buffer, sizeof(uint8_t), size, data);
-
-  fclose(data);
-
-  memcpy(location, buffer, size);
-}
-
-void c64_core_load_roms(C64_Core *core)
-{
-  load_data("roms/basic.bin",core->ram + 0xA000, 0x2000);
-  load_data("roms/kernal.bin",core->ram + 0xE000, 0x2000);
-  load_data("roms/chargen.bin",core->ram+0xD000, 0x1000);
-}
-
-bool c64_load_binary(C64_Core *core, const char *filename, uint16_t addr)
-{
-    FILE *f = fopen(filename, "rb");
-    if (!f) {
-        fprintf(stderr, "Error: Cannot open %s\n", filename);
-        return false;
-    }
-
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    size_t read = fread(&core->ram[addr], 1, size, f);
-    fclose(f);
-
-    printf("Loaded %ld bytes at $%04X\n", read, addr);
-    return read == size;
-}
 
 void c64_core_reset(C64_Core *core)
 {
@@ -114,22 +87,21 @@ cpu_t *bus_get_cpu(c64_bus_t *bus)
 {
     if (!bus)
         return false;
-    printf("bus_get_cpu\n");
-    return NULL;
+    return bus->cpu;
 }
 
 memory_t *bus_get_ram(c64_bus_t *bus)
 {
     if (!bus)
         return false;
-    printf("bus_clock\n");
-    return NULL;
+    return bus->mem;
 }
 
 void bus_destroy(c64_bus_t *bus)
 {
-    printf("bus_destroy\n");
     if (!bus)
         return;
+    cpu_destroy(bus->cpu);
+    memory_destroy(bus->mem);
     free(bus);
 }

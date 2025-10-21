@@ -4,7 +4,7 @@
 #include "cpu/cpu.h"
 #include "cpu/opcodes.h"
 
-struct cpu_6510_t
+struct cpu
 {
     uint64_t cycles;
     uint16_t pc;
@@ -27,18 +27,33 @@ typedef struct
     uint8_t size;
 } intruction_t;
 
+cpu_t *cpu_create()
+{
+    cpu_t *cpu = malloc(sizeof(cpu_t));
+    if(!cpu) return NULL;
+    return cpu;
+}
+
 void cpu_dump(cpu_t *cpu, FILE *file)
 {
     printf("cpu_dump\n");
 }
+
 void cpu_get_state(cpu_t *cpu, cpu_state_t *state)
 {
     printf("cpu_get_state\n");
     state->cycles = 0;
 }
+
 void cpu_set_state(cpu_t *cpu, cpu_state_t *state)
 {
     printf("cpu_set_state\n");
+}
+
+void cpu_destroy(cpu_t *cpu)
+{
+    if(!cpu) return;
+    free(cpu);
 }
 
 intruction_t instruction_set[256] = {
@@ -300,131 +315,131 @@ intruction_t instruction_set[256] = {
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FF
 };
 
-cpu_6510_t *create_cpu()
+cpu_t *create_cpu()
 {
-    cpu_6510_t *cpu = malloc(sizeof(cpu_6510_t));
+    cpu_t *cpu = malloc(sizeof(cpu_t));
     if (cpu)
         return cpu;
     return NULL;
 }
 
-void destroy_cpu(cpu_6510_t *cpu)
+void destroy_cpu(cpu_t *cpu)
 {
     if (cpu)
         free(cpu);
 }
 
-void set_flag(cpu_6510_t *cpu, uint8_t flag, bool value) {if (value) cpu->sr = cpu->sr | flag; else cpu->sr = cpu->sr & ~flag; }
-bool get_flag(cpu_6510_t *cpu, uint8_t flag){ return cpu->sr & flag; }
+void set_flag(cpu_t *cpu, uint8_t flag, bool value) {if (value) cpu->sr = cpu->sr | flag; else cpu->sr = cpu->sr & ~flag; }
+bool get_flag(cpu_t *cpu, uint8_t flag){ return cpu->sr & flag; }
 
-void set_carry_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_C, value); }
-void set_zero_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_Z, value); }
-void set_interrupt_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_I, value); }
-void set_decimal_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_D, value); }
-void set_break_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_B, value); }
-void set_overflow_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_V, value); }
-void set_negative_flag(cpu_6510_t *cpu, bool value) { set_flag(cpu, FLAG_N, value); }
+void set_carry_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_C, value); }
+void set_zero_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_Z, value); }
+void set_interrupt_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_I, value); }
+void set_decimal_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_D, value); }
+void set_break_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_B, value); }
+void set_overflow_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_V, value); }
+void set_negative_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_N, value); }
 
-bool get_carry_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_C); }
-bool get_zero_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_Z); }
-bool get_interrupt_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_I); }
-bool get_decimal_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_D); }
-bool get_break_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_B); }
-bool get_overflow_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_V); }
-bool get_negative_flag(cpu_6510_t *cpu) { return get_flag(cpu, FLAG_N); }
+bool get_carry_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_C); }
+bool get_zero_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_Z); }
+bool get_interrupt_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_I); }
+bool get_decimal_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_D); }
+bool get_break_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_B); }
+bool get_overflow_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_V); }
+bool get_negative_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_N); }
 
-uint8_t read_accumulator(cpu_6510_t *cpu)
+uint8_t read_accumulator(cpu_t *cpu)
 {
     return cpu->a;
 }
 
-void write_accumulator(cpu_6510_t *cpu, uint8_t value)
+void write_accumulator(cpu_t *cpu, uint8_t value)
 {
     cpu->a = value;
 }
 
-uint8_t read_xr(cpu_6510_t *cpu)
+uint8_t read_xr(cpu_t *cpu)
 {
     return cpu->x;
 }
 
-void write_xr(cpu_6510_t *cpu, uint8_t value)
+void write_xr(cpu_t *cpu, uint8_t value)
 {
     cpu->x = value;
 }
 
-uint8_t read_yr(cpu_6510_t *cpu)
+uint8_t read_yr(cpu_t *cpu)
 {
     return cpu->y;
 }
 
-void write_yr(cpu_6510_t *cpu, uint8_t value)
+void write_yr(cpu_t *cpu, uint8_t value)
 {
     cpu->y = value;
 }
 
-uint8_t read_sp(cpu_6510_t *cpu)
+uint8_t read_sp(cpu_t *cpu)
 {
     return cpu->sp;
 }
 
-void write_sp(cpu_6510_t *cpu, uint8_t value)
+void write_sp(cpu_t *cpu, uint8_t value)
 {
     cpu->sp = value;
 }
 
-uint8_t read_sr(cpu_6510_t *cpu)
+uint8_t read_sr(cpu_t *cpu)
 {
     return cpu->sr;
 }
 
-void write_sr(cpu_6510_t *cpu, uint8_t value)
+void write_sr(cpu_t *cpu, uint8_t value)
 {
     cpu->sr = value;
 }
 
-uint16_t read_program_counter(cpu_6510_t *cpu)
+uint16_t read_program_counter(cpu_t *cpu)
 {
     return cpu->pc;
 }
 
-void write_program_counter(cpu_6510_t *cpu, uint16_t value)
+void write_program_counter(cpu_t *cpu, uint16_t value)
 {
     cpu->pc = value;
 }
 
-void increment_program_counter(cpu_6510_t *cpu, uint16_t value)
+void increment_program_counter(cpu_t *cpu, uint16_t value)
 {
     cpu->pc = cpu->pc + value;
 }
 
-void push(cpu_6510_t *cpu, memory_t ram, uint8_t value)
+void push(cpu_t *cpu, memory_t *mem, uint8_t value)
 {
     uint16_t address = 0x0100 | cpu->sp;
-    ram[address] = value;
+    write_direct(mem, address, value);
     cpu->sp = (cpu->sp - 1) & 0xFF;
 }
 
-uint8_t pop(cpu_6510_t *cpu, memory_t ram)
+uint8_t pop(cpu_t *cpu, memory_t *mem)
 {
     cpu->sp = (cpu->sp + 1) & 0xFF;
     uint16_t addr = 0x0100 | cpu->sp;
-    return ram[addr];
+    return read_direct(mem, addr);
 }
 
-uint64_t read_cycles(cpu_6510_t *cpu)
+uint64_t read_cycles(cpu_t *cpu)
 {
     return cpu->cycles;
 }
 
-void increment_cycles(cpu_6510_t *cpu, uint8_t value)
+void increment_cycles(cpu_t *cpu, uint8_t value)
 {
     cpu->cycles += value;
 }
 
-uint8_t fetch_instruction(cpu_6510_t *cpu, memory_t ram)
+uint8_t fetch_instruction(cpu_t *cpu, memory_t *mem)
 {
-    return ram[cpu->pc];
+    return read_direct(mem, cpu->pc);
 }
 
 execute_t decode_instruction(uint8_t opcode)
@@ -432,25 +447,25 @@ execute_t decode_instruction(uint8_t opcode)
     return instruction_set[opcode].code;
 }
 
-uint16_t decode_address_accumulator(cpu_6510_t *cpu, memory_t ram){return 0;}
-uint16_t decode_address_implied(cpu_6510_t *cpu, memory_t ram){return 0;}
+uint16_t decode_address_accumulator(cpu_t *cpu, memory_t *mem){return 0;}
+uint16_t decode_address_implied(cpu_t *cpu, memory_t *mem){return 0;}
 
-uint16_t decode_address_immediate(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_immediate(cpu_t *cpu, memory_t *mem)
 {
     return cpu->pc + 1;
 }
 
-uint16_t decode_address_absolute(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_absolute(cpu_t *cpu, memory_t *mem)
 {
-    uint8_t low_addr = ram[cpu->pc + 1];
-    uint8_t high_addr = ram[cpu->pc + 2];
+    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
+    uint8_t high_addr = read_direct(mem, cpu->pc) + 2;
     return high_addr << 8 | low_addr;
 }
 
-uint16_t decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_absolute_x(cpu_t *cpu, memory_t *mem)
 {
-    uint8_t low_addr = ram[cpu->pc + 1];
-    uint8_t high_addr = ram[cpu->pc + 2];
+    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
+    uint8_t high_addr = read_direct(mem, cpu->pc + 2);
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->x;
     if (((address ^ new_address) & 0xFF00) != 0)
@@ -458,10 +473,10 @@ uint16_t decode_address_absolute_x(cpu_6510_t *cpu, memory_t ram)
     return new_address;
 }
 
-uint16_t decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_absolute_y(cpu_t *cpu, memory_t *mem)
 {
-    uint8_t low_addr = ram[cpu->pc + 1];
-    uint8_t high_addr = ram[cpu->pc + 2];
+    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
+    uint8_t high_addr = read_direct(mem, cpu->pc + 2);
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->y;
     if (((address ^ new_address) & 0xFF00) != 0)
@@ -469,24 +484,24 @@ uint16_t decode_address_absolute_y(cpu_6510_t *cpu, memory_t ram)
     return new_address;
 }
 
-uint16_t decode_address_zeropage(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_zeropage(cpu_t *cpu, memory_t *mem)
 {
-    return (uint8_t)ram[cpu->pc + 1];
+    return (uint8_t)read_direct(mem, cpu->pc + 1);
 }
 
-uint16_t decode_address_zeropage_x(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_zeropage_x(cpu_t *cpu, memory_t *mem)
 {
-    return (uint8_t)(ram[cpu->pc + 1] + cpu->x);
+    return (uint8_t)(read_direct(mem, cpu->pc+1) + cpu->x);
 }
 
-uint16_t decode_address_zeropage_y(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_zeropage_y(cpu_t *cpu, memory_t *mem)
 {
-    return (uint8_t)(ram[cpu->pc + 1] + cpu->y);
+    return (uint8_t)(read_direct(mem, cpu->pc + 1)+ cpu->y);
 }
 
-uint16_t decode_address_relative(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_relative(cpu_t *cpu, memory_t *mem)
 {
-    int8_t offset = (int8_t)ram[cpu->pc + 1];
+    int8_t offset = (int8_t)read_direct(mem, cpu->pc+ 1 );
     uint16_t address = cpu->pc + 2;
     uint16_t new_address = address + offset;
     if (((address ^ new_address) & 0xFF00) != 0)
@@ -494,32 +509,32 @@ uint16_t decode_address_relative(cpu_6510_t *cpu, memory_t ram)
     return new_address;
 }
 
-uint16_t decode_address_indirect(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_indirect(cpu_t *cpu, memory_t *mem)
 {
-    uint8_t low_addr = ram[cpu->pc + 1];
-    uint8_t high_addr = ram[cpu->pc + 2];
+    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
+    uint8_t high_addr = read_direct(mem, cpu->pc +2 );
     uint16_t address = high_addr << 8 | low_addr;
     
-    uint8_t target_low = ram[address];
-    uint8_t target_high = ram[(address & 0xFF00) | ((address + 1) & 0x00FF)];
+    uint8_t target_low = read_direct(mem, address);
+    uint8_t target_high = read_direct(mem, (address & 0xFF00) | ((address + 1) & 0x00FF));
     
     return (target_high << 8) | target_low;
 }
 
-uint16_t decode_address_indirect_x(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_indirect_x(cpu_t *cpu, memory_t *mem)
 {
-    uint8_t zp_base = ram[cpu->pc + 1];
+    uint8_t zp_base = read_direct(mem, cpu->pc + 1);
     uint8_t zp_addr = zp_base + cpu->x;
-    uint8_t low_addr = ram[zp_addr];
-    uint8_t high_addr = ram[(uint8_t)(zp_addr + 1)];
+    uint8_t low_addr = read_direct(mem, zp_addr);
+    uint8_t high_addr = read_direct(mem, (uint8_t)(zp_addr + 1));
     return high_addr << 8 | low_addr;
 }
 
-uint16_t decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
+uint16_t decode_address_indirect_y(cpu_t *cpu, memory_t *mem)
 {
-    uint16_t zp_addr = (uint16_t)ram[cpu->pc + 1];
-    uint8_t low_addr = ram[zp_addr];
-    uint8_t high_addr = ram[zp_addr + 1];
+    uint16_t zp_addr = (uint16_t)read_direct(mem, cpu->pc+1);
+    uint8_t low_addr = read_direct(mem, zp_addr);
+    uint8_t high_addr = read_direct(mem, zp_addr+1);
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + cpu->y;
     if (((address ^ new_address) & 0xFF00) != 0)
@@ -527,7 +542,7 @@ uint16_t decode_address_indirect_y(cpu_6510_t *cpu, memory_t ram)
     return new_address;
 }
 
-void dump_cpu(cpu_6510_t *cpu, FILE *file)
+void dump_cpu(cpu_t *cpu, FILE *file)
 {
     char flags[9];
     flags[0] = get_negative_flag(cpu) ? 'x' : '.';
@@ -544,7 +559,7 @@ void dump_cpu(cpu_6510_t *cpu, FILE *file)
     fprintf(file, "PC: %04X SP: %02X SR: %02X %s %lu\n\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
 }
 
-void log_cpu(cpu_6510_t *cpu, memory_t ram)
+void log_cpu(cpu_t *cpu, memory_t *mem)
 {
     char flags[9];
     flags[0] = get_negative_flag(cpu) ? 'x' : '.';
@@ -557,14 +572,21 @@ void log_cpu(cpu_6510_t *cpu, memory_t ram)
     flags[7] = get_carry_flag(cpu) ? 'x' : '.';
     flags[8] = 0;
 
+    uint8_t a = read_direct(mem, cpu->pc);
+    uint8_t b = read_direct(mem, cpu->pc+1);
+    uint8_t c = read_direct(mem, cpu->pc+2);
+    uint8_t d = read_direct(mem, cpu->pc+3);
+
+    uint8_t opcode = read_direct(mem, cpu->pc);
+
     //printf("\033[1;1H");
     printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Instruction Cycles\n", cpu->a, cpu->x, cpu->y);
-    printf("PC: %04X SP: %02X SR: %02X %s %s         %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, instruction_set[ram[cpu->pc]].name, cpu->cycles);
+    printf("PC: %04X SP: %02X SR: %02X %s %s         %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, instruction_set[opcode].name, cpu->cycles);
     printf("%04X %04X %04X %04X\n", cpu->pc, cpu->pc + 1, cpu->pc + 2, cpu->pc + 3);
-    printf("  %02X   %02X   %02X   %02X\n", ram[cpu->pc], ram[cpu->pc + 1], ram[cpu->pc + 2], ram[cpu->pc + 3]);
+    printf("  %02X   %02X   %02X   %02X\n", a,b,c,d);
 }
 
-bool handle_reset(cpu_6510_t *cpu, memory_t ram)
+bool handle_reset(cpu_t *cpu, memory_t *mem)
 {
     //TODO complete reset routine
     cpu->reset = false;
@@ -574,19 +596,19 @@ bool handle_reset(cpu_6510_t *cpu, memory_t ram)
     sr = sr | FLAG_U;
 
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, (uint8_t)(pc >> 8));
-    push(cpu, ram, (uint8_t)(pc & 0xFF));
-    push(cpu, ram, sr);
+    push(cpu, mem, (uint8_t)(pc >> 8));
+    push(cpu, mem, (uint8_t)(pc & 0xFF));
+    push(cpu, mem, sr);
 
     set_interrupt_flag(cpu, true);
     
-    uint16_t vector = (ram[0xFFFD] << 8) | ram[0xFFFC];
+    uint16_t vector = (read_direct(mem, 0xFFFD) << 8) | read_direct(mem, 0xFFFC);
     write_program_counter(cpu, vector);
 
     return true;
 }
 
-bool handle_nmi(cpu_6510_t *cpu, memory_t ram)
+bool handle_nmi(cpu_t *cpu, memory_t *mem)
 {
     cpu->nmi = false;
 
@@ -595,13 +617,13 @@ bool handle_nmi(cpu_6510_t *cpu, memory_t ram)
     sr = sr | FLAG_U;
 
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, (uint8_t)(pc >> 8));
-    push(cpu, ram, (uint8_t)(pc & 0xFF));
-    push(cpu, ram, sr);
+    push(cpu, mem, (uint8_t)(pc >> 8));
+    push(cpu, mem, (uint8_t)(pc & 0xFF));
+    push(cpu, mem, sr);
 
     set_interrupt_flag(cpu, true);
     
-    uint16_t vector = (ram[0xFFFB] << 8) | ram[0xFFFA];
+    uint16_t vector = (read_direct(mem, 0xFFFB) << 8) | read_direct(mem, 0xFFFA);
     write_program_counter(cpu, vector);
 
     increment_cycles(cpu, 7);
@@ -609,7 +631,7 @@ bool handle_nmi(cpu_6510_t *cpu, memory_t ram)
     return true;
 }
 
-bool handle_irq(cpu_6510_t *cpu, memory_t ram)
+bool handle_irq(cpu_t *cpu, memory_t *mem)
 {
     cpu->irq = false;
 
@@ -618,13 +640,13 @@ bool handle_irq(cpu_6510_t *cpu, memory_t ram)
     sr = sr | FLAG_U;
 
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, (uint8_t)(pc >> 8));
-    push(cpu, ram, (uint8_t)(pc & 0xFF));
-    push(cpu, ram, sr);
+    push(cpu, mem, (uint8_t)(pc >> 8));
+    push(cpu, mem, (uint8_t)(pc & 0xFF));
+    push(cpu, mem, sr);
 
     set_interrupt_flag(cpu, true);
     
-    uint16_t vector = (ram[0xFFFF] << 8) | ram[0xFFFE];
+    uint16_t vector = (read_direct(mem, 0xFFFF) << 8) | read_direct(mem, 0xFFFE);
     write_program_counter(cpu, vector);
 
     increment_cycles(cpu, 7);
@@ -632,32 +654,32 @@ bool handle_irq(cpu_6510_t *cpu, memory_t ram)
     return true;
 }
 
-bool cpu_step(cpu_6510_t *cpu, memory_t ram)
+bool cpu_step(cpu_t *cpu, memory_t *mem)
 {
-    if(cpu->reset) return handle_reset(cpu, ram);
-    if(cpu->nmi) return handle_nmi(cpu, ram);
-    if(cpu->irq && !get_interrupt_flag(cpu)) return handle_irq(cpu, ram);
+    if(cpu->reset) return handle_reset(cpu, mem);
+    if(cpu->nmi) return handle_nmi(cpu, mem);
+    if(cpu->irq && !get_interrupt_flag(cpu)) return handle_irq(cpu, mem);
 
-    uint8_t opcode = ram[cpu->pc];
+    uint8_t opcode = read_direct(mem, cpu->pc);
     execute_t execute = instruction_set[opcode].code;
     address_mode_t decode_address = instruction_set[opcode].mode;
-    uint16_t address = decode_address(cpu, ram);
+    uint16_t address = decode_address(cpu, mem);
     increment_cycles(cpu, instruction_set[opcode].cycles);
     increment_program_counter(cpu, instruction_set[opcode].cycles);
-    return execute(cpu, ram, address);
+    return execute(cpu, mem, address);
 }
 
-void reset_request(cpu_6510_t *cpu)
+void reset_request(cpu_t *cpu)
 {
     cpu->reset = true;
 }
 
-void interrupt_request_non_maskable(cpu_6510_t *cpu)
+void interrupt_request_non_maskable(cpu_t *cpu)
 {
     cpu->nmi = true;
 }
 
-void interrupt_request(cpu_6510_t *cpu)
+void interrupt_request(cpu_t *cpu)
 {
     cpu->irq = true;
 }

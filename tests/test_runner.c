@@ -40,10 +40,10 @@ static void print_cpu_state(c64_system_t *c64)
     printf("  Cycles: %lu\n", state.cycles);
     
     // Mostra memoria intorno a PC
-    memory_t *ram = bus_get_ram(bus);
+    memory_t *mem = bus_get_ram(bus);
     printf("\nMemory at PC:\n  ");
     for (int i = 0; i < 16; i++) {
-        printf("%02X ", ram[state.pc + i]);
+        printf("%02X ", read_direct(mem, state.pc + i));
     }
     printf("\n");
 }

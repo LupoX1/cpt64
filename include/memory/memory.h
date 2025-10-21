@@ -4,13 +4,15 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef uint8_t memory_t[0x10000];
+#define RAM_SIZE 0x10000
 
-uint8_t read(memory_t memory, uint16_t address);
-void write(memory_t memory, uint16_t address, uint8_t value);
+typedef struct memory memory_t;
 
-void dump_memory(memory_t, FILE *file);
+memory_t *memory_create();
+void memory_dump(memory_t*, FILE*);
+void memory_destroy(memory_t*);
 
-void memory_dump(memory_t *ram, FILE *file);
+uint8_t read_direct(memory_t*, uint16_t);
+void write_direct(memory_t*, uint16_t, uint8_t);
 
 #endif /* MEMORY_H */

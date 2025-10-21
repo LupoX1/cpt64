@@ -1,8 +1,8 @@
 #include "cpu/opcodes.h"
 
-bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool adc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     bool decimal_mode = get_decimal_flag(cpu);
     bool carry = get_carry_flag(cpu);
     uint8_t acc = read_accumulator(cpu);
@@ -49,9 +49,9 @@ bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool and(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool and(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t result = read_accumulator(cpu) & value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
@@ -59,14 +59,14 @@ bool and(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool asl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool asl(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    uint8_t value = address ? read_direct(mem, address) : read_accumulator(cpu);
     set_carry_flag(cpu, (value & FLAG_N) != 0);
     uint8_t result = value << 1;
 
     if (address)
-        ram[address] = result;
+        write_direct(mem, address, result);
     else
         write_accumulator(cpu, result);
 
@@ -76,14 +76,14 @@ bool asl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bad(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bad(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t opcode = read(ram, address);
+    uint8_t opcode = read_direct(mem, address);
     printf("BAD %02X @ %04X\n", opcode, address);
     return false;
 }
 
-bool bcc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bcc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool carry = get_carry_flag(cpu);
     if (!carry)
@@ -94,7 +94,7 @@ bool bcc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bsc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bsc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool carry = get_carry_flag(cpu);
     if (carry)
@@ -105,7 +105,7 @@ bool bsc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool beq(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool beq(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool zero = get_zero_flag(cpu);
     if (zero)
@@ -116,9 +116,9 @@ bool beq(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bit(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bit(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t result = read_accumulator(cpu) & value;
     
     set_zero_flag(cpu, result == 0);
@@ -127,7 +127,7 @@ bool bit(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bmi(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bmi(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool negative = get_negative_flag(cpu);
     if (negative)
@@ -138,7 +138,7 @@ bool bmi(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bne(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bne(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool zero = get_zero_flag(cpu);
     if (!zero)
@@ -149,7 +149,7 @@ bool bne(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bpl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bpl(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool negative = get_negative_flag(cpu);
     if (!negative)
@@ -160,27 +160,27 @@ bool bpl(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool brk(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool brk(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t sr = read_sr(cpu);
     sr = sr | FLAG_B;
     sr = sr | FLAG_U;
 
     uint16_t pc = read_program_counter(cpu) + 1;
-    push(cpu, ram, (uint8_t)(pc >> 8));
-    push(cpu, ram, (uint8_t)(pc & 0xFF));
-    push(cpu, ram, sr);
+    push(cpu, mem, (uint8_t)(pc >> 8));
+    push(cpu, mem, (uint8_t)(pc & 0xFF));
+    push(cpu, mem, sr);
 
     set_interrupt_flag(cpu, true);
     set_break_flag(cpu, true);
 
-    uint16_t vector = (ram[0xFFFF] << 8) | ram[0xFFFE];
+    uint16_t vector = (read_direct(mem, 0xFFFF) << 8) | read_direct(mem, 0xFFFE);
     write_program_counter(cpu, vector);
 
     return true;
 }
 
-bool bvc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bvc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool overflow = get_overflow_flag(cpu);
     if (!overflow)
@@ -191,7 +191,7 @@ bool bvc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool bvs(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool bvs(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     bool overflow = get_overflow_flag(cpu);
     if (overflow)
@@ -202,33 +202,33 @@ bool bvs(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool clc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool clc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_carry_flag(cpu, false);
     return true;
 }
 
-bool cld(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool cld(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_decimal_flag(cpu, false);
     return true;
 }
 
-bool cli(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool cli(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_interrupt_flag(cpu, false);
     return true;
 }
 
-bool clv(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool clv(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_overflow_flag(cpu, false);
     return true;
 }
 
-bool cmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool cmp(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t acc = read_accumulator(cpu);
     uint8_t result = acc - value;
 
@@ -239,9 +239,9 @@ bool cmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool cpx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool cpx(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t xr = read_xr(cpu);
     uint8_t result = xr - value;
 
@@ -252,9 +252,9 @@ bool cpx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool cpy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool cpy(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t yr = read_yr(cpu);
     uint8_t result = yr - value;
 
@@ -265,20 +265,20 @@ bool cpy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool dec(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool dec(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t result = value - 1;
 
     set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
 
-    ram[address] = result;
+    write_direct(mem, address, result);
 
     return true;
 }
 
-bool dex(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool dex(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t result = read_xr(cpu) - 1;
     write_xr(cpu, result);
@@ -289,7 +289,7 @@ bool dex(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool dey(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool dey(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t result = read_yr(cpu) - 1;
     write_yr(cpu, result);
@@ -300,9 +300,9 @@ bool dey(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool eor(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool eor(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t result = read_accumulator(cpu) ^ value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
@@ -310,18 +310,18 @@ bool eor(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool inc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool inc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t result = value + 1;
 
     set_negative_flag(cpu, (result & FLAG_N) != 0);
     set_zero_flag(cpu, result == 0);
-    ram[address] = result;
+    write_direct(mem, address, result);
     return true;
 }
 
-bool inx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool inx(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t result = read_xr(cpu) + 1;
     write_xr(cpu, result);
@@ -331,7 +331,7 @@ bool inx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool iny(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool iny(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t result = read_yr(cpu) + 1;
     write_yr(cpu, result);
@@ -341,54 +341,54 @@ bool iny(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool jmp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool jmp(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     write_program_counter(cpu, address);
     return true;
 }
 
-bool jsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool jsr(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint16_t pc = read_program_counter(cpu);
-    push(cpu, ram, (uint8_t)((pc - 1) >> 8));
-    push(cpu, ram, (uint8_t)((pc - 1) & 0xFF));
+    push(cpu, mem, (uint8_t)((pc - 1) >> 8));
+    push(cpu, mem, (uint8_t)((pc - 1) & 0xFF));
     write_program_counter(cpu, address);
     return true;
 }
 
-bool lda(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool lda(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     write_accumulator(cpu, value);
     set_zero_flag(cpu, value == 0);
     set_negative_flag(cpu, (value & FLAG_N) != 0);
     return true;
 }
 
-bool ldx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool ldx(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     write_xr(cpu, value);
     set_zero_flag(cpu, value == 0);
     set_negative_flag(cpu, (value & FLAG_N) != 0);
     return true;
 }
 
-bool ldy(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool ldy(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     write_yr(cpu, value);
     set_zero_flag(cpu, value == 0);
     set_negative_flag(cpu, (value & FLAG_N) != 0);
     return true;
 }
 
-bool lsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool lsr(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    uint8_t value = address ? read_direct(mem, address) : read_accumulator(cpu);
     uint8_t result = value >> 1;
     if (address)
-        ram[address] = result;
+        write_direct(mem, address, result);
     else
         write_accumulator(cpu, result);
     set_carry_flag(cpu, (value & FLAG_C) != 0);
@@ -397,13 +397,13 @@ bool lsr(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool nop(cpu_6510_t *cpu, memory_t ram, uint16_t address) {
+bool nop(cpu_t *cpu, memory_t *mem, uint16_t address) {
     return true;
 }
 
-bool ora(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool ora(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     uint8_t result = read_accumulator(cpu) | value;
     write_accumulator(cpu, result);
     set_zero_flag(cpu, result == 0);
@@ -411,43 +411,43 @@ bool ora(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool pha(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool pha(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t acc = read_accumulator(cpu);
-    push(cpu, ram, acc);
+    push(cpu, mem, acc);
     return true;
 }
 
-bool php(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool php(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t status = read_sr(cpu);
     status = status | FLAG_B;
     status = status | FLAG_U;
-    push(cpu, ram, status);
+    push(cpu, mem, status);
     return true;
 }
 
-bool pla(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool pla(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t acc = pop(cpu, ram);
+    uint8_t acc = pop(cpu, mem);
     write_accumulator(cpu, acc);
     set_zero_flag(cpu, acc == 0);
     set_negative_flag(cpu, (acc & FLAG_N) != 0);
     return true;
 }
 
-bool plp(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool plp(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t status = pop(cpu, ram);
+    uint8_t status = pop(cpu, mem);
     status = status & ~FLAG_B;
     status = status | FLAG_U;
     write_sr(cpu, status);
     return true;
 }
 
-bool rol(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool rol(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    uint8_t value = address ? read_direct(mem, address) : read_accumulator(cpu);
     bool new_carry = (value & FLAG_N) != 0;
     bool old_carry = get_carry_flag(cpu);
     uint8_t result = value << 1;
@@ -456,7 +456,7 @@ bool rol(cpu_6510_t *cpu, memory_t ram, uint16_t address)
         result = result | 0x01;
     }
     if (address)
-        ram[address] = result;
+        write_direct(mem, address, result);
     else
         write_accumulator(cpu, result);
     set_carry_flag(cpu, new_carry);
@@ -465,9 +465,9 @@ bool rol(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool ror(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = address ? ram[address] : read_accumulator(cpu);
+    uint8_t value = address ? read_direct(mem, address) : read_accumulator(cpu);
     bool new_carry = (value & 0x01) != 0;
     bool old_carry = get_carry_flag(cpu);
     uint8_t result = value >> 1;
@@ -476,7 +476,7 @@ bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
         result = result | FLAG_N;
     }
     if (address)
-        ram[address] = result;
+        write_direct(mem, address, result);
     else
         write_accumulator(cpu, result);
     set_carry_flag(cpu, new_carry);
@@ -485,14 +485,14 @@ bool ror(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool rti(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool rti(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t status = pop(cpu, ram);
+    uint8_t status = pop(cpu, mem);
     status = status & ~FLAG_B;
     status = status | FLAG_U;
 
-    uint8_t low = pop(cpu, ram);
-    uint8_t high = pop(cpu, ram);
+    uint8_t low = pop(cpu, mem);
+    uint8_t high = pop(cpu, mem);
     uint16_t pc = high << 8 | low;
  
     write_program_counter(cpu, pc);
@@ -501,18 +501,18 @@ bool rti(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool rts(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool rts(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t low = pop(cpu, ram);
-    uint8_t high = pop(cpu, ram);
+    uint8_t low = pop(cpu, mem);
+    uint8_t high = pop(cpu, mem);
     uint16_t pc = high << 8 | low;
     write_program_counter(cpu, pc + 1);
     return true;
 }
 
-bool sbc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool sbc(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    uint8_t value = ram[address];
+    uint8_t value = read_direct(mem, address);
     bool decimal_mode = get_decimal_flag(cpu);
     bool carry = get_carry_flag(cpu);
     uint8_t acc = read_accumulator(cpu);
@@ -558,43 +558,46 @@ bool sbc(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool sec(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool sec(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_carry_flag(cpu, true);
     return true;
 }
 
-bool sed(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool sed(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_decimal_flag(cpu, true);
     return true;
 }
 
-bool sei(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool sei(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     set_interrupt_flag(cpu, true);
     return true;
 }
 
-bool sta(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool sta(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    ram[address] = read_accumulator(cpu);
+    uint8_t acc = read_accumulator(cpu);
+    write_direct(mem, address, acc);
     return true;
 }
 
-bool stx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool stx(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    ram[address] = read_xr(cpu);
+    uint8_t xr = read_xr(cpu);
+    write_direct(mem, address, xr);
     return true;
 }
 
-bool sty(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool sty(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
-    ram[address] = read_yr(cpu);
+    uint8_t yr = read_yr(cpu);
+    write_direct(mem, address, yr);
     return true;
 }
 
-bool tax(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool tax(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t acc = read_accumulator(cpu);
     write_xr(cpu, acc);
@@ -603,7 +606,7 @@ bool tax(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool tay(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool tay(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t acc = read_accumulator(cpu);
     write_yr(cpu, acc);
@@ -612,7 +615,7 @@ bool tay(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool tsx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool tsx(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t sp = read_sp(cpu);
     write_xr(cpu, sp);
@@ -621,7 +624,7 @@ bool tsx(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool txa(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool txa(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t xr = read_xr(cpu);
     write_accumulator(cpu, xr);
@@ -630,14 +633,14 @@ bool txa(cpu_6510_t *cpu, memory_t ram, uint16_t address)
     return true;
 }
 
-bool txs(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool txs(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t xr = read_xr(cpu);
     write_sp(cpu, xr);
     return true;
 }
 
-bool tya(cpu_6510_t *cpu, memory_t ram, uint16_t address)
+bool tya(cpu_t *cpu, memory_t *mem, uint16_t address)
 {
     uint8_t yr = read_yr(cpu);
     write_accumulator(cpu, yr);
