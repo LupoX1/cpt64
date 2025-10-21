@@ -54,6 +54,14 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 static c64_system_t *g_c64 = NULL;
 
+static volatile sig_atomic_t keep_running = 1;
+
+static void sig_handler(int _)
+{
+    (void)_;
+    keep_running = 0;
+}
+
 void sigfault_handler(int sig, siginfo_t *si, void *unused)
 {
     printf("\n=== SIGSEGV Caught! ===\n");
@@ -76,6 +84,7 @@ int main(int argc, char *argv[])
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = sigfault_handler;
     sigaction(SIGSEGV, &sa, NULL);
+    signal(SIGINT, sig_handler);
     
     printf("=== %s v%s ===\n", APP_NAME, APP_VERSION);
     printf("%s\n", APP_DESCRIPTION);
@@ -112,15 +121,13 @@ int main(int argc, char *argv[])
     printf("Cycles: %lu\r", c64_get_cycles(g_c64));
     fflush(stdout);
     
-    uint64_t last_report = 0;
-    while (c64_step(g_c64)) {
+    while (keep_running && c64_step(g_c64)) {
         uint64_t cycles = c64_get_cycles(g_c64);
         
         // Report ogni 100k cicli
-        if (cycles - last_report > 100000) {
+        if (cycles % 100000 == 0) {
             printf("Cycles: %lu\r", cycles);
             fflush(stdout);
-            last_report = cycles;
         }
     }
     
