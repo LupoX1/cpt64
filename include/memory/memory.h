@@ -11,4 +11,6 @@ void write(memory_t memory, uint16_t address, uint8_t value);
 
 void dump_memory(memory_t, FILE *file);
 
+void memory_dump(memory_t *ram, FILE *file);
+
 #endif /* MEMORY_H */

@@ -1,8 +1,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "cpu.h"
-#include "opcodes.h"
+#include "cpu/cpu.h"
+#include "cpu/opcodes.h"
 
 struct cpu_6510_t
 {
@@ -26,6 +26,16 @@ typedef struct
     uint8_t cycles;
     uint8_t size;
 } intruction_t;
+
+void cpu_dump(cpu_t *cpu, FILE *file)
+{
+    printf("cpu_dump\n");
+}
+void cpu_get_state(cpu_t *cpu, cpu_state_t *state)
+{
+    printf("cpu_get_state\n");
+    state->cycles = 0;
+}
 
 intruction_t instruction_set[256] = {
     {.code = brk, .mode = IMP, .name = "brk", .cycles = 7, .size = 1}, // 00

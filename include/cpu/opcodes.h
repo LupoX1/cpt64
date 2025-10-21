@@ -1,7 +1,7 @@
 #ifndef OPCODES_H
 #define OPCODES_H
 
-#include "cpu.h"
+#include "cpu/cpu.h"
 
 bool adc(cpu_6510_t *cpu, memory_t ram, uint16_t address);
 bool and(cpu_6510_t *cpu, memory_t ram, uint16_t address);

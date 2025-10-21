@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "memory/memory.h"
 
 uint8_t read(memory_t memory, uint16_t address)
 {
@@ -47,4 +47,9 @@ void dump_memory(memory_t ram, FILE *file)
     pos += snprintf( buffer + pos, sizeof(buffer) - pos, "\n");
     fputs(buffer, file);
   }
+}
+
+void memory_dump(memory_t *ram, FILE *file)
+{
+  printf("memory_dump\n");
 }

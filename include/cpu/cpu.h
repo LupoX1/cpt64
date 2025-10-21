@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "memory.h"
+#include "../memory/memory.h"
 
 #define N_D NULL
 #define ACC &decode_address_accumulator
@@ -30,6 +30,18 @@
 #define FLAG_U 0x20
 #define FLAG_V 0x40
 #define FLAG_N 0x80
+
+
+typedef struct {
+    uint64_t cycles;
+} cpu_state_t;
+
+typedef struct {
+    int c;
+} cpu_t;
+
+void cpu_dump(cpu_t *cpu, FILE *file);
+void cpu_get_state(cpu_t *cpu, cpu_state_t *state);
 
 typedef struct cpu_6510_t cpu_6510_t;
 typedef bool (*execute_t)(cpu_6510_t *cpu, memory_t ram, uint16_t address);

@@ -92,7 +92,7 @@ add_library(c64_core STATIC
     src/memory/memory.c
     
     # CPU
-    src/cpu/cpu6510.c
+    src/cpu/cpu.c
     src/cpu/cpu_internal.c
     src/cpu/addressing.c
     src/cpu/opcodes.c
