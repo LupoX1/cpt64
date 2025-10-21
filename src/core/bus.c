@@ -34,7 +34,7 @@ void bus_load_roms(c64_bus_t *bus)
     printf("bus_load_roms\n");
 }
 
-bool bus_load_binary(c64_bus_t *bus, char *program_file, uint16_t address)
+bool bus_load_binary(c64_bus_t *bus, const char *program_file, uint16_t address)
 {
     if (!bus)
         return false;

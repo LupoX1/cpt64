@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     
     // Loop principale
     printf("Running... (Press Ctrl+C to stop)\n");
-    printf("Cycles: %lu\n", c64_get_cycles(g_c64));
+    printf("Cycles: %lu\r", c64_get_cycles(g_c64));
     fflush(stdout);
     
     uint64_t last_report = 0;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
         
         // Report ogni 100k cicli
         if (cycles - last_report > 100000) {
-            printf("Cycles: %lu\n", cycles);
+            printf("Cycles: %lu\r", cycles);
             fflush(stdout);
             last_report = cycles;
         }

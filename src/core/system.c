@@ -12,7 +12,6 @@ struct c64_system
 
 c64_system_t *c64_create()
 {
-    printf("c64_create\n");
     c64_system_t *sys = malloc(sizeof(c64_system_t));
     if(!sys) return NULL;
     
@@ -26,17 +25,15 @@ c64_system_t *c64_create()
     return sys;
 }
 
-bool c64_load_program(c64_system_t *sys, char *program_file, uint16_t address)
+bool c64_load_program(c64_system_t *sys, const char *program_file, uint16_t address)
 {
     if(!sys) return false;
-    printf("c64_load_program\n");
     return bus_load_binary(sys->bus, program_file, address);
 }
 
 void c64_reset(c64_system_t *sys)
 {
     if(!sys) return;
-    printf("c64_reset\n");
     bus_load_roms(sys->bus);
     bus_reset(sys->bus);
 }
@@ -44,14 +41,12 @@ void c64_reset(c64_system_t *sys)
 bool c64_step(c64_system_t *sys)
 {
     if(!sys) return false;
-    printf("c64_step\n");
     return bus_clock(sys->bus);
 }
 
 uint64_t c64_get_cycles(c64_system_t *sys)
 {
     if(!sys) return 0;
-    printf("c64_get_cycles\n");
     cpu_state_t state;
     cpu_t *cpu = bus_get_cpu(sys->bus);
     cpu_get_state(cpu, &state);
@@ -60,7 +55,6 @@ uint64_t c64_get_cycles(c64_system_t *sys)
 
 void c64_dump_state(c64_system_t *sys, const char* filename)
 {
-    printf("c64_dump_state to %s\n", filename);
     if(!sys || !filename) return;
 
     FILE *file = fopen(filename, "w+");
@@ -75,9 +69,14 @@ void c64_dump_state(c64_system_t *sys, const char* filename)
     fclose(file);
 }
 
+c64_bus_t *c64_get_bus(c64_system_t* sys)
+{
+    if(!sys) return NULL;
+    return sys->bus;
+}
+
 void c64_destroy(c64_system_t *sys)
 {
-    printf("c64_destroy\n");
     if(!sys) return;
     bus_destroy(sys->bus);
     free(sys);

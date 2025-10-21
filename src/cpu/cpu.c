@@ -36,6 +36,10 @@ void cpu_get_state(cpu_t *cpu, cpu_state_t *state)
     printf("cpu_get_state\n");
     state->cycles = 0;
 }
+void cpu_set_state(cpu_t *cpu, cpu_state_t *state)
+{
+    printf("cpu_set_state\n");
+}
 
 intruction_t instruction_set[256] = {
     {.code = brk, .mode = IMP, .name = "brk", .cycles = 7, .size = 1}, // 00

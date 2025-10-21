@@ -34,6 +34,12 @@
 
 typedef struct {
     uint64_t cycles;
+    uint16_t pc;
+    uint8_t sp;
+    uint8_t sr;
+    uint8_t x;
+    uint8_t y;
+    uint8_t a;
 } cpu_state_t;
 
 typedef struct {
@@ -42,6 +48,7 @@ typedef struct {
 
 void cpu_dump(cpu_t *cpu, FILE *file);
 void cpu_get_state(cpu_t *cpu, cpu_state_t *state);
+void cpu_set_state(cpu_t *cpu, cpu_state_t *state);
 
 typedef struct cpu_6510_t cpu_6510_t;
 typedef bool (*execute_t)(cpu_6510_t *cpu, memory_t ram, uint16_t address);
