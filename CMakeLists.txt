@@ -93,10 +93,9 @@ add_library(c64_core STATIC
     
     # CPU
     src/cpu/cpu.c
-    src/cpu/cpu_internal.c
     src/cpu/addressing.c
     src/cpu/opcodes.c
-    src/cpu/tables.c
+    src/cpu/instructions.c
 )
 
 target_include_directories(c64_core PUBLIC

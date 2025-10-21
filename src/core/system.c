@@ -4,13 +4,14 @@
 #include "core/system.h"
 #include "core/bus.h"
 #include "cpu/cpu.h"
+#include "memory/memory.h"
 
 struct c64_system
 {
     c64_bus_t *bus;
 };
 
-c64_system_t *c64_create()
+c64_system_t* c64_create()
 {
     c64_system_t *sys = malloc(sizeof(c64_system_t));
     if(!sys) return NULL;
@@ -69,7 +70,7 @@ void c64_dump_state(c64_system_t *sys, const char* filename)
     fclose(file);
 }
 
-c64_bus_t *c64_get_bus(c64_system_t* sys)
+c64_bus_t* c64_get_bus(c64_system_t* sys)
 {
     if(!sys) return NULL;
     return sys->bus;

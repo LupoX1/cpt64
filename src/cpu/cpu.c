@@ -1,8 +1,15 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "core/bus.h"
 #include "cpu/cpu.h"
 #include "cpu/opcodes.h"
+#include "cpu/addressing.h"
+#include "cpu/instructions.h"
+
+#define INT_RESET 0x04
+#define INT_NMI   0x02
+#define INT_IRQ   0x01
 
 struct cpu
 {
@@ -13,41 +20,21 @@ struct cpu
     uint8_t y;
     uint8_t sr;
     uint8_t sp;
-    bool reset;
-    bool nmi;
-    bool irq;
+    uint8_t int_pending;
 };
 
-typedef struct
-{
-    execute_t code;
-    address_mode_t mode;
-    char name[4];
-    uint8_t cycles;
-    uint8_t size;
-} intruction_t;
+extern bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus);
 
 cpu_t *cpu_create()
 {
     cpu_t *cpu = malloc(sizeof(cpu_t));
     if(!cpu) return NULL;
+
+    cpu->sp = 0xFD;
+    cpu->sr = FLAG_U | FLAG_I;
+    cpu->int_pending = 0;
+
     return cpu;
-}
-
-void cpu_dump(cpu_t *cpu, FILE *file)
-{
-    printf("cpu_dump\n");
-}
-
-void cpu_get_state(cpu_t *cpu, cpu_state_t *state)
-{
-    printf("cpu_get_state\n");
-    state->cycles = 0;
-}
-
-void cpu_set_state(cpu_t *cpu, cpu_state_t *state)
-{
-    printf("cpu_set_state\n");
 }
 
 void cpu_destroy(cpu_t *cpu)
@@ -56,630 +43,223 @@ void cpu_destroy(cpu_t *cpu)
     free(cpu);
 }
 
-intruction_t instruction_set[256] = {
-    {.code = brk, .mode = IMP, .name = "brk", .cycles = 7, .size = 1}, // 00
-    {.code = ora, .mode = INX, .name = "ora", .cycles = 6, .size = 2}, // 01
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 02
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 03
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 04
-    {.code = ora, .mode = ZPG, .name = "ora", .cycles = 3, .size = 2}, // 05
-    {.code = asl, .mode = ZPG, .name = "asl", .cycles = 5, .size = 2}, // 06
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 07
-    {.code = php, .mode = IMP, .name = "php", .cycles = 3, .size = 1}, // 08
-    {.code = ora, .mode = IMM, .name = "ora", .cycles = 2, .size = 2}, // 09
-    {.code = asl, .mode = ACC, .name = "asl", .cycles = 2, .size = 1}, // 0A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 0B
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 0C
-    {.code = ora, .mode = ABS, .name = "ora", .cycles = 4, .size = 3}, // 0D
-    {.code = asl, .mode = ABS, .name = "asl", .cycles = 6, .size = 3}, // 0E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 0F
-    {.code = bpl, .mode = REL, .name = "bpl", .cycles = 2, .size = 2}, // 10
-    {.code = ora, .mode = INY, .name = "ora", .cycles = 5, .size = 2}, // 11
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 12
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 13
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 14
-    {.code = ora, .mode = ZPX, .name = "ora", .cycles = 4, .size = 2}, // 15
-    {.code = asl, .mode = ZPX, .name = "asl", .cycles = 6, .size = 2}, // 16
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 17
-    {.code = clc, .mode = IMP, .name = "clc", .cycles = 2, .size = 1}, // 18
-    {.code = ora, .mode = ABY, .name = "ora", .cycles = 4, .size = 3}, // 19
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 1A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 1B
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 1C
-    {.code = ora, .mode = ABX, .name = "ora", .cycles = 4, .size = 3}, // 1D
-    {.code = asl, .mode = ABX, .name = "asl", .cycles = 7, .size = 3}, // 1E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 1F
-    {.code = jsr, .mode = ABS, .name = "jsr", .cycles = 6, .size = 3}, // 20
-    {.code = and, .mode = INX, .name = "and", .cycles = 6, .size = 2}, // 21
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 22
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 23
-    {.code = bit, .mode = ZPG, .name = "bit", .cycles = 3, .size = 2}, // 24
-    {.code = and, .mode = ZPG, .name = "and", .cycles = 3, .size = 2}, // 25
-    {.code = rol, .mode = ZPG, .name = "rol", .cycles = 5, .size = 2}, // 26
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 27
-    {.code = plp, .mode = IMP, .name = "plp", .cycles = 4, .size = 1}, // 28
-    {.code = and, .mode = IMM, .name = "and", .cycles = 2, .size = 2}, // 29
-    {.code = rol, .mode = ACC, .name = "rol", .cycles = 2, .size = 1}, // 2A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 2B
-    {.code = bit, .mode = ABS, .name = "bit", .cycles = 4, .size = 3}, // 2C
-    {.code = and, .mode = ABS, .name = "and", .cycles = 4, .size = 3}, // 2D
-    {.code = rol, .mode = ABS, .name = "rol", .cycles = 6, .size = 3}, // 2E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 2F
-    {.code = bmi, .mode = REL, .name = "bmi", .cycles = 2, .size = 2}, // 30
-    {.code = and, .mode = INY, .name = "and", .cycles = 5, .size = 2}, // 31
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 32
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 33
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 34
-    {.code = and, .mode = ZPX, .name = "and", .cycles = 4, .size = 2}, // 35
-    {.code = rol, .mode = ZPX, .name = "rol", .cycles = 6, .size = 2}, // 36
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 37
-    {.code = sec, .mode = IMP, .name = "sec", .cycles = 2, .size = 1}, // 38
-    {.code = and, .mode = ABY, .name = "and", .cycles = 4, .size = 3}, // 39
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 3A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 3B
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 3C
-    {.code = and, .mode = ABX, .name = "and", .cycles = 4, .size = 3}, // 3D
-    {.code = rol, .mode = ABX, .name = "rol", .cycles = 7, .size = 3}, // 3E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 3F
-    {.code = rti, .mode = IMP, .name = "rti", .cycles = 6, .size = 1}, // 40
-    {.code = eor, .mode = INY, .name = "eor", .cycles = 6, .size = 2}, // 41
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 42
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 43
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 44
-    {.code = eor, .mode = ZPG, .name = "eor", .cycles = 3, .size = 2}, // 45
-    {.code = lsr, .mode = ZPG, .name = "lsr", .cycles = 5, .size = 2}, // 46
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 47
-    {.code = pha, .mode = IMP, .name = "pha", .cycles = 3, .size = 1}, // 48
-    {.code = eor, .mode = IMM, .name = "eor", .cycles = 2, .size = 2}, // 49
-    {.code = lsr, .mode = ACC, .name = "lsr", .cycles = 2, .size = 1}, // 4A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 4B
-    {.code = jmp, .mode = ABS, .name = "jmp", .cycles = 3, .size = 3}, // 4C
-    {.code = eor, .mode = ABS, .name = "eor", .cycles = 4, .size = 3}, // 4D
-    {.code = lsr, .mode = ABS, .name = "lsr", .cycles = 3, .size = 3}, // 4E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 4F
-    {.code = bvc, .mode = REL, .name = "bvc", .cycles = 2, .size = 2}, // 50
-    {.code = eor, .mode = INY, .name = "eor", .cycles = 5, .size = 2}, // 51
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 52
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 53
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 54
-    {.code = eor, .mode = ZPX, .name = "eor", .cycles = 4, .size = 2}, // 55
-    {.code = lsr, .mode = ZPX, .name = "lsr", .cycles = 6, .size = 2}, // 56
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 57
-    {.code = cli, .mode = IMP, .name = "cli", .cycles = 2, .size = 1}, // 58
-    {.code = eor, .mode = ABY, .name = "eor", .cycles = 4, .size = 3}, // 59
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 5A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 5B
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 5C
-    {.code = eor, .mode = ABX, .name = "eor", .cycles = 4, .size = 3}, // 5D
-    {.code = lsr, .mode = ABX, .name = "lsr", .cycles = 7, .size = 3}, // 5E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 5F
-    {.code = rts, .mode = IMP, .name = "rts", .cycles = 6, .size = 1}, // 60
-    {.code = adc, .mode = INX, .name = "adc", .cycles = 6, .size = 2}, // 61
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 62
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 63
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 64
-    {.code = adc, .mode = ZPG, .name = "adc", .cycles = 3, .size = 2}, // 65
-    {.code = ror, .mode = ZPG, .name = "ror", .cycles = 5, .size = 2}, // 66
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 67
-    {.code = pla, .mode = IMP, .name = "pla", .cycles = 4, .size = 1}, // 68
-    {.code = adc, .mode = IMM, .name = "adc", .cycles = 2, .size = 2}, // 69
-    {.code = ror, .mode = ACC, .name = "ror", .cycles = 2, .size = 1}, // 6A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 6B
-    {.code = jmp, .mode = IND, .name = "jmp", .cycles = 5, .size = 3}, // 6C
-    {.code = adc, .mode = ABS, .name = "adc", .cycles = 4, .size = 3}, // 6D
-    {.code = ror, .mode = ABS, .name = "ror", .cycles = 6, .size = 3}, // 6E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 6F
-    {.code = bvs, .mode = REL, .name = "bvs", .cycles = 2, .size = 2}, // 70
-    {.code = adc, .mode = INY, .name = "adc", .cycles = 5, .size = 2}, // 71
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 72
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 73
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 74
-    {.code = adc, .mode = ZPX, .name = "adc", .cycles = 4, .size = 2}, // 75
-    {.code = ror, .mode = ZPX, .name = "ror", .cycles = 6, .size = 2}, // 76
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 77
-    {.code = sei, .mode = IMP, .name = "sei", .cycles = 2, .size = 1}, // 78
-    {.code = adc, .mode = ABY, .name = "adc", .cycles = 4, .size = 3}, // 79
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 7A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 7B
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 7C
-    {.code = adc, .mode = ABX, .name = "adc", .cycles = 4, .size = 3}, // 7D
-    {.code = ror, .mode = ABX, .name = "ror", .cycles = 7, .size = 3}, // 7E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 7F
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 80
-    {.code = sta, .mode = INX, .name = "sta", .cycles = 6, .size = 2}, // 81
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 82
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 83
-    {.code = sty, .mode = ZPG, .name = "sty", .cycles = 3, .size = 2}, // 84
-    {.code = sta, .mode = ZPG, .name = "sta", .cycles = 3, .size = 2}, // 85
-    {.code = stx, .mode = ZPG, .name = "stx", .cycles = 3, .size = 2}, // 86
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 87
-    {.code = dey, .mode = IMP, .name = "dey", .cycles = 2, .size = 1}, // 88
-    {.code = sta, .mode = N_D, .name = "sta", .cycles = 0, .size = 0}, // 89
-    {.code = txa, .mode = IMP, .name = "txa", .cycles = 2, .size = 1}, // 8A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 8B
-    {.code = sty, .mode = ABS, .name = "sty", .cycles = 4, .size = 3}, // 8C
-    {.code = sta, .mode = ABS, .name = "sta", .cycles = 4, .size = 3}, // 8D
-    {.code = stx, .mode = ABS, .name = "stx", .cycles = 4, .size = 3}, // 8E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 8F
-    {.code = bcc, .mode = REL, .name = "bcc", .cycles = 2, .size = 2}, // 90
-    {.code = sta, .mode = INY, .name = "sta", .cycles = 6, .size = 2}, // 91
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 92
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 93
-    {.code = sty, .mode = ZPX, .name = "sty", .cycles = 4, .size = 2}, // 94
-    {.code = sta, .mode = ZPX, .name = "sta", .cycles = 4, .size = 2}, // 95
-    {.code = stx, .mode = ZPY, .name = "stx", .cycles = 4, .size = 2}, // 96
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 97
-    {.code = tya, .mode = IMP, .name = "tya", .cycles = 2, .size = 1}, // 98
-    {.code = sta, .mode = ABY, .name = "sta", .cycles = 5, .size = 3}, // 99
-    {.code = txs, .mode = IMP, .name = "txs", .cycles = 2, .size = 1}, // 9A
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 9B
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 9C
-    {.code = sta, .mode = ABX, .name = "sta", .cycles = 5, .size = 3}, // 9D
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 9E
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 9F
-    {.code = ldy, .mode = IMM, .name = "ldy", .cycles = 2, .size = 2}, // A0
-    {.code = lda, .mode = INX, .name = "lda", .cycles = 6, .size = 2}, // A1
-    {.code = ldx, .mode = IMM, .name = "ldx", .cycles = 2, .size = 2}, // A2
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // A3
-    {.code = ldy, .mode = ZPG, .name = "ldy", .cycles = 3, .size = 2}, // A4
-    {.code = lda, .mode = ZPG, .name = "lda", .cycles = 3, .size = 2}, // A5
-    {.code = ldx, .mode = ZPG, .name = "ldx", .cycles = 3, .size = 2}, // A6
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // A7
-    {.code = tay, .mode = IMP, .name = "tay", .cycles = 2, .size = 1}, // A8
-    {.code = lda, .mode = IMM, .name = "lda", .cycles = 2, .size = 2}, // A9
-    {.code = tax, .mode = IMP, .name = "tax", .cycles = 2, .size = 1}, // AA
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // AB
-    {.code = ldy, .mode = ABS, .name = "ldy", .cycles = 4, .size = 3}, // AC
-    {.code = lda, .mode = ABS, .name = "lda", .cycles = 4, .size = 3}, // AD
-    {.code = ldx, .mode = ABS, .name = "ldx", .cycles = 4, .size = 3}, // AE
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // AF
-    {.code = bsc, .mode = REL, .name = "bsc", .cycles = 2, .size = 2}, // B0
-    {.code = lda, .mode = INY, .name = "lda", .cycles = 5, .size = 2}, // B1
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // B2
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // B3
-    {.code = ldy, .mode = ZPX, .name = "ldy", .cycles = 4, .size = 2}, // B4
-    {.code = lda, .mode = ZPX, .name = "lda", .cycles = 4, .size = 2}, // B5
-    {.code = ldx, .mode = ZPY, .name = "ldx", .cycles = 4, .size = 2}, // B6
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // B7
-    {.code = clv, .mode = IMP, .name = "clv", .cycles = 2, .size = 1}, // B8
-    {.code = lda, .mode = ABY, .name = "lda", .cycles = 4, .size = 3}, // B9
-    {.code = tsx, .mode = IMP, .name = "tsx", .cycles = 2, .size = 1}, // BA
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // BB
-    {.code = ldy, .mode = ABX, .name = "ldy", .cycles = 4, .size = 3}, // BC
-    {.code = lda, .mode = ABX, .name = "lda", .cycles = 4, .size = 3}, // BD
-    {.code = ldx, .mode = ABY, .name = "ldx", .cycles = 4, .size = 3}, // BE
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // BF
-    {.code = cpy, .mode = IMM, .name = "cpy", .cycles = 2, .size = 2}, // C0
-    {.code = cmp, .mode = INX, .name = "cmp", .cycles = 6, .size = 2}, // C1
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // C2
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // C3
-    {.code = cpy, .mode = ZPG, .name = "cpy", .cycles = 3, .size = 2}, // C4
-    {.code = cmp, .mode = ZPG, .name = "cmp", .cycles = 3, .size = 2}, // C5
-    {.code = dec, .mode = ZPG, .name = "dec", .cycles = 5, .size = 2}, // C6
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // C7
-    {.code = iny, .mode = IMP, .name = "iny", .cycles = 2, .size = 1}, // C8
-    {.code = cmp, .mode = IMM, .name = "cmp", .cycles = 2, .size = 2}, // C9
-    {.code = dex, .mode = IMP, .name = "dex", .cycles = 2, .size = 1}, // CA
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // CB
-    {.code = cpy, .mode = ABS, .name = "cpy", .cycles = 4, .size = 3}, // CC
-    {.code = cmp, .mode = ABS, .name = "cmp", .cycles = 4, .size = 3}, // CD
-    {.code = dec, .mode = ABS, .name = "dec", .cycles = 6, .size = 3}, // CE
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // CF
-    {.code = bne, .mode = REL, .name = "bne", .cycles = 2, .size = 2}, // D0
-    {.code = cmp, .mode = INY, .name = "cmp", .cycles = 5, .size = 2}, // D1
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // D2
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // D3
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // D4
-    {.code = cmp, .mode = ZPX, .name = "cmp", .cycles = 4, .size = 2}, // D5
-    {.code = dec, .mode = ZPX, .name = "dec", .cycles = 6, .size = 2}, // D6
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // D7
-    {.code = cld, .mode = IMP, .name = "cld", .cycles = 2, .size = 1}, // D8
-    {.code = cmp, .mode = ABY, .name = "cmp", .cycles = 4, .size = 3}, // D9
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // DA
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // DB
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // DC
-    {.code = cmp, .mode = ABX, .name = "cmp", .cycles = 4, .size = 3}, // DD
-    {.code = dec, .mode = ABX, .name = "dec", .cycles = 7, .size = 3}, // DE
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // DF
-    {.code = cpx, .mode = IMM, .name = "cpx", .cycles = 2, .size = 2}, // E0
-    {.code = sbc, .mode = INX, .name = "sbc", .cycles = 6, .size = 2}, // E1
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // E2
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // E3
-    {.code = cpx, .mode = ZPG, .name = "cpx", .cycles = 3, .size = 2}, // E4
-    {.code = sbc, .mode = ZPG, .name = "sbc", .cycles = 3, .size = 2}, // E5
-    {.code = inc, .mode = ZPG, .name = "inc", .cycles = 5, .size = 2}, // E6
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // E7
-    {.code = inx, .mode = IMP, .name = "inx", .cycles = 2, .size = 1}, // E8
-    {.code = sbc, .mode = IMM, .name = "sbc", .cycles = 2, .size = 2}, // E9
-    {.code = nop, .mode = IMP, .name = "nop", .cycles = 2, .size = 1}, // EA
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // EB
-    {.code = cpx, .mode = ABS, .name = "cpx", .cycles = 4, .size = 3}, // EC
-    {.code = sbc, .mode = ABS, .name = "sbc", .cycles = 4, .size = 3}, // ED
-    {.code = inc, .mode = ABS, .name = "inc", .cycles = 6, .size = 3}, // EE
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // EF
-    {.code = beq, .mode = REL, .name = "beq", .cycles = 2, .size = 2}, // F0
-    {.code = sbc, .mode = INY, .name = "sbc", .cycles = 5, .size = 2}, // F1
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // F2
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // F3
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // F4
-    {.code = sbc, .mode = ZPX, .name = "sbc", .cycles = 4, .size = 2}, // F5
-    {.code = inc, .mode = ZPX, .name = "inc", .cycles = 6, .size = 2}, // F6
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // F7
-    {.code = sed, .mode = IMP, .name = "sed", .cycles = 2, .size = 1}, // F8
-    {.code = sbc, .mode = ABY, .name = "sbc", .cycles = 4, .size = 3}, // F9
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FA
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FB
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FC
-    {.code = sbc, .mode = ABX, .name = "sbc", .cycles = 4, .size = 3}, // FD
-    {.code = inc, .mode = ABX, .name = "inc", .cycles = 7, .size = 3}, // FE
-    {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FF
-};
-
-cpu_t *create_cpu()
+void cpu_dump(cpu_t *cpu, FILE *out)
 {
-    cpu_t *cpu = malloc(sizeof(cpu_t));
-    if (cpu)
-        return cpu;
-    return NULL;
+    char flags[9];
+    flags[0] = (cpu->sr & FLAG_N) ? 'N' : 'n';
+    flags[1] = (cpu->sr & FLAG_V) ? 'V' : 'v';
+    flags[2] = '-';
+    flags[3] = (cpu->sr & FLAG_B) ? 'B' : 'b';
+    flags[4] = (cpu->sr & FLAG_D) ? 'D' : 'd';
+    flags[5] = (cpu->sr & FLAG_I) ? 'I' : 'i';
+    flags[6] = (cpu->sr & FLAG_Z) ? 'Z' : 'z';
+    flags[7] = (cpu->sr & FLAG_C) ? 'C' : 'c';
+    flags[8] = '\0';
+    
+    fprintf(out, "PC: %04X  SP: %02X  A: %02X  X: %02X  Y: %02X\n",
+            cpu->pc, cpu->sp, cpu->a, cpu->x, cpu->y);
+    fprintf(out, "SR: %02X [%s]  Cycles: %lu\n",
+            cpu->sr, flags, cpu->cycles);
 }
 
-void destroy_cpu(cpu_t *cpu)
+void cpu_log(cpu_t *cpu, c64_bus_t *bus)
 {
-    if (cpu)
-        free(cpu);
+    uint8_t opcode = bus_read(bus, cpu->pc);
+    
+    printf("PC:%04X A:%02X X:%02X Y:%02X SP:%02X SR:%02X OP:%02X CY:%lu\n",
+           cpu->pc, cpu->a, cpu->x, cpu->y, cpu->sp, cpu->sr, 
+           opcode, cpu->cycles);
 }
 
-void set_flag(cpu_t *cpu, uint8_t flag, bool value) {if (value) cpu->sr = cpu->sr | flag; else cpu->sr = cpu->sr & ~flag; }
-bool get_flag(cpu_t *cpu, uint8_t flag){ return cpu->sr & flag; }
-
-void set_carry_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_C, value); }
-void set_zero_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_Z, value); }
-void set_interrupt_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_I, value); }
-void set_decimal_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_D, value); }
-void set_break_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_B, value); }
-void set_overflow_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_V, value); }
-void set_negative_flag(cpu_t *cpu, bool value) { set_flag(cpu, FLAG_N, value); }
-
-bool get_carry_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_C); }
-bool get_zero_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_Z); }
-bool get_interrupt_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_I); }
-bool get_decimal_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_D); }
-bool get_break_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_B); }
-bool get_overflow_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_V); }
-bool get_negative_flag(cpu_t *cpu) { return get_flag(cpu, FLAG_N); }
-
-uint8_t read_accumulator(cpu_t *cpu)
+void cpu_reset(cpu_t *cpu, c64_bus_t *bus)
 {
-    return cpu->a;
+    cpu->int_pending |= INT_RESET;
+    cpu_step(cpu, bus);
 }
 
-void write_accumulator(cpu_t *cpu, uint8_t value)
+void cpu_trigger_irq(cpu_t *cpu)
 {
-    cpu->a = value;
+    cpu->int_pending |= INT_IRQ;
 }
 
-uint8_t read_xr(cpu_t *cpu)
+void cpu_trigger_nmi(cpu_t *cpu)
 {
-    return cpu->x;
+    cpu->int_pending |= INT_NMI;
 }
 
-void write_xr(cpu_t *cpu, uint8_t value)
+void cpu_get_state(cpu_t *cpu, cpu_state_t *state)
 {
-    cpu->x = value;
+    if (!cpu || !state) return;
+    state->pc = cpu->pc;
+    state->sp = cpu->sp;
+    state->a = cpu->a;
+    state->x = cpu->x;
+    state->y = cpu->y;
+    state->sr = cpu->sr;
+    state->cycles = cpu->cycles;
 }
 
-uint8_t read_yr(cpu_t *cpu)
+void cpu_set_state(cpu_t *cpu, cpu_state_t *state)
 {
-    return cpu->y;
+    if (!cpu || !state) return;
+    cpu->pc = state->pc;
+    cpu->sp = state->sp;
+    cpu->a = state->a;
+    cpu->x = state->x;
+    cpu->y = state->y;
+    cpu->sr = state->sr;
+    cpu->cycles = state->cycles;
 }
 
-void write_yr(cpu_t *cpu, uint8_t value)
-{
-    cpu->y = value;
+
+uint16_t cpu_get_pc(cpu_t *cpu) { return cpu->pc; }
+void cpu_set_pc(cpu_t *cpu, uint16_t val) { cpu->pc = val; }
+void cpu_inc_pc(cpu_t *cpu, uint16_t val) { cpu->pc += val; }
+
+uint8_t cpu_get_a(cpu_t *cpu) { return cpu->a; }
+void cpu_set_a(cpu_t *cpu, uint8_t val) { cpu->a = val; }
+
+uint8_t cpu_get_x(cpu_t *cpu) { return cpu->x; }
+void cpu_set_x(cpu_t *cpu, uint8_t val) { cpu->x = val; }
+
+uint8_t cpu_get_y(cpu_t *cpu) { return cpu->y; }
+void cpu_set_y(cpu_t *cpu, uint8_t val) { cpu->y = val; }
+
+uint8_t cpu_get_sp(cpu_t *cpu) { return cpu->sp; }
+void cpu_set_sp(cpu_t *cpu, uint8_t val) { cpu->sp = val; }
+
+uint8_t cpu_get_sr(cpu_t *cpu) { return cpu->sr; }
+void cpu_set_sr(cpu_t *cpu, uint8_t val) { cpu->sr = val; }
+
+void cpu_inc_cycles(cpu_t *cpu, uint8_t val) { cpu->cycles += val; }
+
+void cpu_set_flag(cpu_t *cpu, uint8_t flag, bool val) {
+    cpu->sr = val ? (cpu->sr | flag) : (cpu->sr & ~flag);
 }
 
-uint8_t read_sp(cpu_t *cpu)
-{
-    return cpu->sp;
+bool cpu_get_flag(cpu_t *cpu, uint8_t flag) {
+    return (cpu->sr & flag) != 0;
 }
 
-void write_sp(cpu_t *cpu, uint8_t value)
+void cpu_push(cpu_t *cpu, c64_bus_t *bus, uint8_t value)
 {
-    cpu->sp = value;
-}
-
-uint8_t read_sr(cpu_t *cpu)
-{
-    return cpu->sr;
-}
-
-void write_sr(cpu_t *cpu, uint8_t value)
-{
-    cpu->sr = value;
-}
-
-uint16_t read_program_counter(cpu_t *cpu)
-{
-    return cpu->pc;
-}
-
-void write_program_counter(cpu_t *cpu, uint16_t value)
-{
-    cpu->pc = value;
-}
-
-void increment_program_counter(cpu_t *cpu, uint16_t value)
-{
-    cpu->pc = cpu->pc + value;
-}
-
-void push(cpu_t *cpu, memory_t *mem, uint8_t value)
-{
-    uint16_t address = 0x0100 | cpu->sp;
-    write_direct(mem, address, value);
+    uint16_t addr = 0x0100 | cpu->sp;
+    bus_write(bus, addr, value);
     cpu->sp = (cpu->sp - 1) & 0xFF;
 }
 
-uint8_t pop(cpu_t *cpu, memory_t *mem)
+uint8_t cpu_pop(cpu_t *cpu, c64_bus_t *bus)
 {
     cpu->sp = (cpu->sp + 1) & 0xFF;
     uint16_t addr = 0x0100 | cpu->sp;
-    return read_direct(mem, addr);
+    return bus_read(bus, addr);
 }
 
-uint64_t read_cycles(cpu_t *cpu)
+void handle_reset(cpu_t *cpu, c64_bus_t *bus)
 {
-    return cpu->cycles;
-}
-
-void increment_cycles(cpu_t *cpu, uint8_t value)
-{
-    cpu->cycles += value;
-}
-
-uint8_t fetch_instruction(cpu_t *cpu, memory_t *mem)
-{
-    return read_direct(mem, cpu->pc);
-}
-
-execute_t decode_instruction(uint8_t opcode)
-{
-    return instruction_set[opcode].code;
-}
-
-uint16_t decode_address_accumulator(cpu_t *cpu, memory_t *mem){return 0;}
-uint16_t decode_address_implied(cpu_t *cpu, memory_t *mem){return 0;}
-
-uint16_t decode_address_immediate(cpu_t *cpu, memory_t *mem)
-{
-    return cpu->pc + 1;
-}
-
-uint16_t decode_address_absolute(cpu_t *cpu, memory_t *mem)
-{
-    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
-    uint8_t high_addr = read_direct(mem, cpu->pc) + 2;
-    return high_addr << 8 | low_addr;
-}
-
-uint16_t decode_address_absolute_x(cpu_t *cpu, memory_t *mem)
-{
-    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
-    uint8_t high_addr = read_direct(mem, cpu->pc + 2);
-    uint16_t address = high_addr << 8 | low_addr;
-    uint16_t new_address = address + cpu->x;
-    if (((address ^ new_address) & 0xFF00) != 0)
-        cpu->cycles++;
-    return new_address;
-}
-
-uint16_t decode_address_absolute_y(cpu_t *cpu, memory_t *mem)
-{
-    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
-    uint8_t high_addr = read_direct(mem, cpu->pc + 2);
-    uint16_t address = high_addr << 8 | low_addr;
-    uint16_t new_address = address + cpu->y;
-    if (((address ^ new_address) & 0xFF00) != 0)
-        cpu->cycles++;
-    return new_address;
-}
-
-uint16_t decode_address_zeropage(cpu_t *cpu, memory_t *mem)
-{
-    return (uint8_t)read_direct(mem, cpu->pc + 1);
-}
-
-uint16_t decode_address_zeropage_x(cpu_t *cpu, memory_t *mem)
-{
-    return (uint8_t)(read_direct(mem, cpu->pc+1) + cpu->x);
-}
-
-uint16_t decode_address_zeropage_y(cpu_t *cpu, memory_t *mem)
-{
-    return (uint8_t)(read_direct(mem, cpu->pc + 1)+ cpu->y);
-}
-
-uint16_t decode_address_relative(cpu_t *cpu, memory_t *mem)
-{
-    int8_t offset = (int8_t)read_direct(mem, cpu->pc+ 1 );
-    uint16_t address = cpu->pc + 2;
-    uint16_t new_address = address + offset;
-    if (((address ^ new_address) & 0xFF00) != 0)
-        cpu->cycles++;
-    return new_address;
-}
-
-uint16_t decode_address_indirect(cpu_t *cpu, memory_t *mem)
-{
-    uint8_t low_addr = read_direct(mem, cpu->pc + 1);
-    uint8_t high_addr = read_direct(mem, cpu->pc +2 );
-    uint16_t address = high_addr << 8 | low_addr;
+    cpu->int_pending &= ~INT_RESET;
     
-    uint8_t target_low = read_direct(mem, address);
-    uint8_t target_high = read_direct(mem, (address & 0xFF00) | ((address + 1) & 0x00FF));
+    // Leggi vector RESET
+    uint8_t lo = bus_read(bus, 0xFFFC);
+    uint8_t hi = bus_read(bus, 0xFFFD);
+    cpu->pc = (hi << 8) | lo;
     
-    return (target_high << 8) | target_low;
+    cpu->sr |= FLAG_I;
+    cpu->sp = 0xFD;
+    cpu->cycles += 7;
 }
 
-uint16_t decode_address_indirect_x(cpu_t *cpu, memory_t *mem)
+void handle_nmi(cpu_t *cpu, c64_bus_t *bus)
 {
-    uint8_t zp_base = read_direct(mem, cpu->pc + 1);
-    uint8_t zp_addr = zp_base + cpu->x;
-    uint8_t low_addr = read_direct(mem, zp_addr);
-    uint8_t high_addr = read_direct(mem, (uint8_t)(zp_addr + 1));
-    return high_addr << 8 | low_addr;
-}
-
-uint16_t decode_address_indirect_y(cpu_t *cpu, memory_t *mem)
-{
-    uint16_t zp_addr = (uint16_t)read_direct(mem, cpu->pc+1);
-    uint8_t low_addr = read_direct(mem, zp_addr);
-    uint8_t high_addr = read_direct(mem, zp_addr+1);
-    uint16_t address = high_addr << 8 | low_addr;
-    uint16_t new_address = address + cpu->y;
-    if (((address ^ new_address) & 0xFF00) != 0)
-        cpu->cycles++;
-    return new_address;
-}
-
-void dump_cpu(cpu_t *cpu, FILE *file)
-{
-    char flags[9];
-    flags[0] = get_negative_flag(cpu) ? 'x' : '.';
-    flags[1] = get_overflow_flag(cpu) ? 'x' : '.';
-    flags[2] = '.';
-    flags[3] = get_break_flag(cpu) ? 'x' : '.';
-    flags[4] = get_decimal_flag(cpu) ? 'x' : '.';
-    flags[5] = get_interrupt_flag(cpu) ? 'x' : '.';
-    flags[6] = get_zero_flag(cpu) ? 'x' : '.';
-    flags[7] = get_carry_flag(cpu) ? 'x' : '.';
-    flags[8] = 0;
-
-    fprintf(file, "AC:   %02X XR: %02X YR: %02X NV-BDIZC Cycle\n", cpu->a, cpu->x, cpu->y);
-    fprintf(file, "PC: %04X SP: %02X SR: %02X %s %lu\n\n", cpu->pc, cpu->sp, cpu->sr, flags, cpu->cycles);
-}
-
-void log_cpu(cpu_t *cpu, memory_t *mem)
-{
-    char flags[9];
-    flags[0] = get_negative_flag(cpu) ? 'x' : '.';
-    flags[1] = get_overflow_flag(cpu) ? 'x' : '.';
-    flags[2] = '.';
-    flags[3] = get_break_flag(cpu) ? 'x' : '.';
-    flags[4] = get_decimal_flag(cpu) ? 'x' : '.';
-    flags[5] = get_interrupt_flag(cpu) ? 'x' : '.';
-    flags[6] = get_zero_flag(cpu) ? 'x' : '.';
-    flags[7] = get_carry_flag(cpu) ? 'x' : '.';
-    flags[8] = 0;
-
-    uint8_t a = read_direct(mem, cpu->pc);
-    uint8_t b = read_direct(mem, cpu->pc+1);
-    uint8_t c = read_direct(mem, cpu->pc+2);
-    uint8_t d = read_direct(mem, cpu->pc+3);
-
-    uint8_t opcode = read_direct(mem, cpu->pc);
-
-    //printf("\033[1;1H");
-    printf("AC:   %02X XR: %02X YR: %02X NV-BDIZC Instruction Cycles\n", cpu->a, cpu->x, cpu->y);
-    printf("PC: %04X SP: %02X SR: %02X %s %s         %lu\n", cpu->pc, cpu->sp, cpu->sr, flags, instruction_set[opcode].name, cpu->cycles);
-    printf("%04X %04X %04X %04X\n", cpu->pc, cpu->pc + 1, cpu->pc + 2, cpu->pc + 3);
-    printf("  %02X   %02X   %02X   %02X\n", a,b,c,d);
-}
-
-bool handle_reset(cpu_t *cpu, memory_t *mem)
-{
-    //TODO complete reset routine
-    cpu->reset = false;
-
-    uint8_t sr = read_sr(cpu);
-    sr = sr & ~FLAG_B;
-    sr = sr | FLAG_U;
-
-    uint16_t pc = read_program_counter(cpu);
-    push(cpu, mem, (uint8_t)(pc >> 8));
-    push(cpu, mem, (uint8_t)(pc & 0xFF));
-    push(cpu, mem, sr);
-
-    set_interrupt_flag(cpu, true);
+    cpu->int_pending &= ~INT_NMI;
     
-    uint16_t vector = (read_direct(mem, 0xFFFD) << 8) | read_direct(mem, 0xFFFC);
-    write_program_counter(cpu, vector);
-
-    return true;
-}
-
-bool handle_nmi(cpu_t *cpu, memory_t *mem)
-{
-    cpu->nmi = false;
-
-    uint8_t sr = read_sr(cpu);
-    sr = sr & ~FLAG_B;
-    sr = sr | FLAG_U;
-
-    uint16_t pc = read_program_counter(cpu);
-    push(cpu, mem, (uint8_t)(pc >> 8));
-    push(cpu, mem, (uint8_t)(pc & 0xFF));
-    push(cpu, mem, sr);
-
-    set_interrupt_flag(cpu, true);
+    // Push PC e SR
+    cpu_push(cpu, bus, (cpu->pc >> 8) & 0xFF);
+    cpu_push(cpu, bus, cpu->pc & 0xFF);
     
-    uint16_t vector = (read_direct(mem, 0xFFFB) << 8) | read_direct(mem, 0xFFFA);
-    write_program_counter(cpu, vector);
-
-    increment_cycles(cpu, 7);
-
-    return true;
-}
-
-bool handle_irq(cpu_t *cpu, memory_t *mem)
-{
-    cpu->irq = false;
-
-    uint8_t sr = read_sr(cpu);
-    sr = sr & ~FLAG_B;
-    sr = sr | FLAG_U;
-
-    uint16_t pc = read_program_counter(cpu);
-    push(cpu, mem, (uint8_t)(pc >> 8));
-    push(cpu, mem, (uint8_t)(pc & 0xFF));
-    push(cpu, mem, sr);
-
-    set_interrupt_flag(cpu, true);
+    uint8_t sr = cpu->sr & ~FLAG_B;
+    sr |= FLAG_U;
+    cpu_push(cpu, bus, sr);
     
-    uint16_t vector = (read_direct(mem, 0xFFFF) << 8) | read_direct(mem, 0xFFFE);
-    write_program_counter(cpu, vector);
-
-    increment_cycles(cpu, 7);
-
-    return true;
+    cpu->sr |= FLAG_I;
+    
+    // Leggi vector NMI
+    uint8_t lo = bus_read(bus, 0xFFFA);
+    uint8_t hi = bus_read(bus, 0xFFFB);
+    cpu->pc = (hi << 8) | lo;
+    
+    cpu->cycles += 7;
 }
 
-bool cpu_step(cpu_t *cpu, memory_t *mem)
+void handle_irq(cpu_t *cpu, c64_bus_t *bus)
 {
-    if(cpu->reset) return handle_reset(cpu, mem);
-    if(cpu->nmi) return handle_nmi(cpu, mem);
-    if(cpu->irq && !get_interrupt_flag(cpu)) return handle_irq(cpu, mem);
-
-    uint8_t opcode = read_direct(mem, cpu->pc);
-    execute_t execute = instruction_set[opcode].code;
-    address_mode_t decode_address = instruction_set[opcode].mode;
-    uint16_t address = decode_address(cpu, mem);
-    increment_cycles(cpu, instruction_set[opcode].cycles);
-    increment_program_counter(cpu, instruction_set[opcode].cycles);
-    return execute(cpu, mem, address);
+    if (cpu->sr & FLAG_I) return;  // IRQ disabled
+    
+    cpu->int_pending &= ~INT_IRQ;
+    
+    // Push PC e SR
+    cpu_push(cpu, bus, (cpu->pc >> 8) & 0xFF);
+    cpu_push(cpu, bus, cpu->pc & 0xFF);
+    
+    uint8_t sr = cpu->sr & ~FLAG_B;
+    sr |= FLAG_U;
+    cpu_push(cpu, bus, sr);
+    
+    cpu->sr |= FLAG_I;
+    
+    // Leggi vector IRQ
+    uint8_t lo = bus_read(bus, 0xFFFE);
+    uint8_t hi = bus_read(bus, 0xFFFF);
+    cpu->pc = (hi << 8) | lo;
+    
+    cpu->cycles += 7;
 }
 
-void reset_request(cpu_t *cpu)
+bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
 {
-    cpu->reset = true;
+    // Fetch opcode
+    uint8_t opcode = bus_read(bus, cpu->pc);
+    
+    // Decode
+    addr_mode_t addr_mode = get_addressing_mode(opcode);
+    opcode_t handler = get_opcode_handler(opcode);
+    
+    if (!addr_mode || !handler) {
+        // Opcode illegale
+        return false;
+    }
+    
+    // Calcola indirizzo
+    uint16_t addr = addr_mode(cpu, bus);
+    
+    // Avanza PC
+    cpu->pc += get_instruction_size(opcode);
+    
+    // Conta cicli base
+    cpu->cycles += get_cycles_count(opcode);
+    
+    // Esegui
+    return handler(cpu, bus, addr);
 }
 
-void interrupt_request_non_maskable(cpu_t *cpu)
+bool cpu_step(cpu_t *cpu, c64_bus_t *bus)
 {
-    cpu->nmi = true;
-}
-
-void interrupt_request(cpu_t *cpu)
-{
-    cpu->irq = true;
+   // Gestisci interrupt in ordine di priorità
+    if (cpu->int_pending & INT_RESET) {
+        handle_reset(cpu, bus);
+        return true;
+    }
+    
+    if (cpu->int_pending & INT_NMI) {
+        handle_nmi(cpu, bus);
+        return true;
+    }
+    
+    if (cpu->int_pending & INT_IRQ) {
+        handle_irq(cpu, bus);
+        return true;
+    }
+ 
+    // Esegui istruzione normale
+    return cpu_execute_instruction(cpu, bus);
 }

@@ -1,17 +1,8 @@
-/*
-typedef struct
-{
-  memory_t ram;
-  uint8_t basic[0x2000];
-  uint8_t kernal[0x2000];
-  uint8_t chars[0x1000];
-  cpu_6510_t *cpu;
-} C64_Core;
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "core/bus.h"
+#include "cpu/cpu.h"
+#include "memory/memory.h"
 
 struct c64_bus
 {
@@ -19,9 +10,9 @@ struct c64_bus
     memory_t *mem;
 };
 
-c64_bus_t *bus_create()
+c64_bus_t* bus_create()
 {
-    c64_bus_t *bus = malloc(sizeof(c64_bus_t));
+    struct c64_bus *bus = malloc(sizeof(struct c64_bus));
     if (!bus) return NULL;
     bus->cpu = cpu_create();
     if(!bus->cpu)
@@ -40,14 +31,23 @@ c64_bus_t *bus_create()
     return bus;
 }
 
-bool bus_load_roms(c64_bus_t *bus)
+void bus_destroy(struct c64_bus *bus)
+{
+    if (!bus)
+        return;
+    cpu_destroy(bus->cpu);
+    memory_destroy(bus->mem);
+    free(bus);
+}
+
+bool bus_load_roms(struct c64_bus *bus)
 {
     if (!bus)
         return false;
     return memory_load_roms(bus->mem);
 }
 
-bool bus_load_binary(c64_bus_t *bus, const char *program_file, uint16_t address)
+bool bus_load_binary(struct c64_bus *bus, const char *program_file, uint16_t address)
 {
     if (!bus)
         return false;
@@ -67,40 +67,40 @@ void c64_core_reset(C64_Core *core)
 }
 */
 
-void bus_reset(c64_bus_t *bus)
+void bus_reset(struct c64_bus *bus)
 {
     if (!bus)
         return;
-    printf("bus_reset\n");
+    cpu_reset(bus->cpu, bus);
 }
 
-bool bus_clock(c64_bus_t *bus)
+bool bus_clock(struct c64_bus *bus)
 {
     if (!bus)
         return false;
-    printf("bus_clock\n");
-    return false;
+    return cpu_step(bus->cpu, bus);
 }
 
-cpu_t *bus_get_cpu(c64_bus_t *bus)
+cpu_t* bus_get_cpu(struct c64_bus *bus)
 {
     if (!bus)
         return false;
     return bus->cpu;
 }
 
-memory_t *bus_get_ram(c64_bus_t *bus)
+memory_t* bus_get_ram(struct c64_bus *bus)
 {
     if (!bus)
         return false;
     return bus->mem;
 }
 
-void bus_destroy(c64_bus_t *bus)
+void bus_write(c64_bus_t *bus, uint16_t addr, uint8_t value)
 {
-    if (!bus)
-        return;
-    cpu_destroy(bus->cpu);
-    memory_destroy(bus->mem);
-    free(bus);
+    write_direct(bus->mem, addr, value);
+}
+
+uint8_t bus_read(c64_bus_t *bus, uint16_t addr)
+{
+    return read_direct(bus->mem, addr);
 }
