@@ -96,6 +96,9 @@ add_library(c64_core STATIC
     src/cpu/addressing.c
     src/cpu/opcodes.c
     src/cpu/instructions.c
+
+    # VIC
+    src/video/vic.c
 )
 
 target_include_directories(c64_core PUBLIC

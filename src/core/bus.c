@@ -3,11 +3,13 @@
 #include "core/bus.h"
 #include "cpu/cpu.h"
 #include "memory/memory.h"
+#include "video/vic.h"
 
 struct c64_bus
 {
     cpu_t *cpu;
     memory_t *mem;
+    vic_t *vic;
 };
 
 c64_bus_t* bus_create()
