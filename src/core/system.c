@@ -64,8 +64,7 @@ void c64_dump_state(c64_system_t *sys, const char* filename)
     cpu_t *cpu = bus_get_cpu(sys->bus);
     cpu_dump(cpu, file);
     fprintf(file, "\n");
-    memory_t *ram = bus_get_ram(sys->bus);
-    memory_dump(ram, file);
+    memory_dump(sys->bus, file);
     
     fclose(file);
 }

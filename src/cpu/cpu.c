@@ -23,16 +23,14 @@ struct cpu
     uint8_t int_pending;
 };
 
-extern bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus);
-
 cpu_t *cpu_create()
 {
     cpu_t *cpu = malloc(sizeof(cpu_t));
     if(!cpu) return NULL;
 
-    cpu->sp = 0xFD;
-    cpu->sr = FLAG_U | FLAG_I;
-    cpu->int_pending = 0;
+   // cpu->sp = 0xFD;
+   // cpu->sr = FLAG_U | FLAG_I;
+   // cpu->int_pending = 0;
 
     return cpu;
 }
@@ -165,7 +163,7 @@ void handle_reset(cpu_t *cpu, c64_bus_t *bus)
     cpu->pc = (hi << 8) | lo;
     
     cpu->sr |= FLAG_I;
-    cpu->sp = 0xFD;
+    //cpu->sp = 0xFD;
     cpu->cycles += 7;
 }
 
