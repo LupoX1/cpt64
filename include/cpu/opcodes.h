@@ -10,7 +10,7 @@ bool and(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
 bool asl(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
 bool bad(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
 bool bcc(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
-bool bsc(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
+bool bcs(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
 bool beq(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
 bool bit(struct cpu *cpu, struct c64_bus *bus, uint16_t address);
 bool bmi(struct cpu *cpu, struct c64_bus *bus, uint16_t address);

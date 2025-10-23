@@ -101,7 +101,7 @@ bool bcc(cpu_t *cpu, c64_bus_t *bus, uint16_t address)
     return true;
 }
 
-bool bsc(cpu_t *cpu, c64_bus_t *bus, uint16_t address)
+bool bcs(cpu_t *cpu, c64_bus_t *bus, uint16_t address)
 {
     bool carry = cpu_get_flag(cpu, FLAG_C);
     if (carry)

@@ -100,7 +100,7 @@ bool is_kernal_rom(memory_t *mem, uint16_t address)
 
 bool is_char_rom(memory_t *mem, uint16_t address)
 {
-  return (read_direct(mem, 1) & !CHAREN) && (address >= CHARGEN_ADDRESS) && ((uint32_t)address <= (CHARGEN_ADDRESS + CHARGEN_SIZE));
+  return (read_direct(mem, 1) & ~CHAREN) && (address >= CHARGEN_ADDRESS) && ((uint32_t)address <= (CHARGEN_ADDRESS + CHARGEN_SIZE));
 }
 
 void bus_write(c64_bus_t *bus, uint16_t addr, uint8_t value)
@@ -108,11 +108,17 @@ void bus_write(c64_bus_t *bus, uint16_t addr, uint8_t value)
     write_direct(bus->mem, addr, value);
 }
 
+uint8_t bus_read_io(c64_bus_t *bus, uint16_t addr)
+{
+    return 0xFF;
+}
+
 uint8_t bus_read(c64_bus_t *bus, uint16_t addr)
 {
     if(is_basic_rom(bus->mem, addr)) return read_basic(bus->mem, addr);
     if(is_kernal_rom(bus->mem, addr)) return read_kernal(bus->mem, addr);
     if(is_char_rom(bus->mem, addr)) return read_chargen(bus->mem, addr);
-    
+    if(is_io(bus->mem, addr)) return bus_read_io(bus, addr);
+
     return read_direct(bus->mem, addr);
 }

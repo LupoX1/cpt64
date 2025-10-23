@@ -92,7 +92,7 @@ instruction_t instruction_set[256] = {
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 4B
     {.code = jmp, .mode = ABS, .name = "jmp", .cycles = 3, .size = 3}, // 4C
     {.code = eor, .mode = ABS, .name = "eor", .cycles = 4, .size = 3}, // 4D
-    {.code = lsr, .mode = ABS, .name = "lsr", .cycles = 3, .size = 3}, // 4E
+    {.code = lsr, .mode = ABS, .name = "lsr", .cycles = 6, .size = 3}, // 4E
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // 4F
     {.code = bvc, .mode = REL, .name = "bvc", .cycles = 2, .size = 2}, // 50
     {.code = eor, .mode = INY, .name = "eor", .cycles = 5, .size = 2}, // 51
@@ -190,7 +190,7 @@ instruction_t instruction_set[256] = {
     {.code = lda, .mode = ABS, .name = "lda", .cycles = 4, .size = 3}, // AD
     {.code = ldx, .mode = ABS, .name = "ldx", .cycles = 4, .size = 3}, // AE
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // AF
-    {.code = bsc, .mode = REL, .name = "bsc", .cycles = 2, .size = 2}, // B0
+    {.code = bcs, .mode = REL, .name = "bcs", .cycles = 2, .size = 2}, // B0
     {.code = lda, .mode = INY, .name = "lda", .cycles = 5, .size = 2}, // B1
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // B2
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // B3

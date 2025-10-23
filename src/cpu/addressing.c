@@ -108,7 +108,7 @@ uint16_t decode_address_indirect_y(cpu_t *cpu, c64_bus_t *bus)
 
     uint16_t zp_addr = (uint16_t)bus_read(bus, pc + 1);
     uint8_t low_addr = bus_read(bus, zp_addr);
-    uint8_t high_addr = bus_read(bus, zp_addr + 1);
+    uint8_t high_addr = bus_read(bus, (uint8_t)(zp_addr + 1));
     uint16_t address = high_addr << 8 | low_addr;
     uint16_t new_address = address + y;
     if (((address ^ new_address) & 0xFF00) != 0)
