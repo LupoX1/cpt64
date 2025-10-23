@@ -6,4 +6,6 @@
 #define APP_DESCRIPTION "@PROJECT_DESCRIPTION@"
 #define APP_ID "@APP_ID@"
 
+#define USE_SDL "@USE_SDL@"
+
 #endif /* CONFIG_H */
