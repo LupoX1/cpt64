@@ -14,7 +14,9 @@
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Texture *texture;
+
 c64_system_t *c64;
+bool stepping = true;
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
@@ -80,7 +82,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
             return 1;
         }
     }
-
+            c64_debug(c64);
     SDL_Log("Initialization complete");
     return SDL_APP_CONTINUE;
 }
@@ -96,8 +98,11 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         fflush(stdout);
     }
 
-    if(!c64_step(c64)) return SDL_APP_FAILURE;
-
+    if(!stepping)
+    {
+        if(!c64_step(c64)) return SDL_APP_FAILURE;
+    }
+    
     return SDL_APP_CONTINUE;
 }
 
@@ -112,7 +117,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     if (event->type == SDL_EVENT_KEY_DOWN)
     {
         SDL_KeyboardEvent *e = (SDL_KeyboardEvent *)event;
-        SDL_Log("Wow, you just pressed the %s key!", SDL_GetKeyName(e->key));
+        //SDL_Log("Wow, you just pressed the %s key!", SDL_GetKeyName(e->key));
+
+        if(SDL_strcmp(SDL_GetKeyName(e->key), "F1") == 0)
+        {
+            stepping = !stepping;
+            if(stepping) c64_debug(c64);
+            SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Stepping %s", stepping? "enabled" : "disabled");
+        }
+        
+        if(stepping && SDL_strcmp(SDL_GetKeyName(e->key), "F2") == 0)
+        {
+        //    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "CPU Step");
+            if(!c64_step(c64)) return SDL_APP_FAILURE;
+            c64_debug(c64);
+        }
     }
 
     return SDL_APP_CONTINUE;

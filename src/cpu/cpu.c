@@ -66,11 +66,45 @@ void cpu_dump(cpu_t *cpu, FILE *out)
 
 void cpu_log(cpu_t *cpu, c64_bus_t *bus)
 {
-    uint8_t opcode = bus_read(bus, cpu->pc);
+    char flags[9];
+    flags[0] = (cpu->sr & FLAG_N) ? 'N' : 'n';
+    flags[1] = (cpu->sr & FLAG_V) ? 'V' : 'v';
+    flags[2] = '-';
+    flags[3] = (cpu->sr & FLAG_B) ? 'B' : 'b';
+    flags[4] = (cpu->sr & FLAG_D) ? 'D' : 'd';
+    flags[5] = (cpu->sr & FLAG_I) ? 'I' : 'i';
+    flags[6] = (cpu->sr & FLAG_Z) ? 'Z' : 'z';
+    flags[7] = (cpu->sr & FLAG_C) ? 'C' : 'c';
+    flags[8] = '\0';
 
-    printf("PC:%04X A:%02X X:%02X Y:%02X SP:%02X SR:%02X OP:%02X CY:%lu\n",
-           cpu->pc, cpu->a, cpu->x, cpu->y, cpu->sp, cpu->sr,
-           opcode, cpu->cycles);
+    printf("PC: %04X  SP: %02X  A: %02X  X: %02X  Y: %02X\n",
+           cpu->pc, cpu->sp, cpu->a, cpu->x, cpu->y);
+    printf("SR: %02X [%s]  Cycles: %lu\n",
+           cpu->sr, flags, cpu->cycles);
+
+    uint8_t opcode = bus_read(bus, cpu->pc);
+    char *instr_name = get_instruction_name(opcode);
+    addr_mode_t addr_mode = get_addressing_mode(opcode);
+    uint8_t size = get_instruction_size(opcode);
+
+    if (!addr_mode)
+    {
+        printf("%04X %02X Instruction: %s\n", cpu->pc, opcode, instr_name);
+        return;
+    }
+
+    uint16_t addr = addr_mode(cpu, bus);
+    uint8_t value = bus_read(bus, addr);
+    for (uint8_t i = 0; i < size; i++)
+    {
+        printf("%04X ", cpu->pc + i);
+    }
+    printf("\n");
+    for (uint8_t i = 0; i < size; i++)
+    {
+        printf("  %02X ", bus_read(bus, cpu->pc + i));
+    }
+    printf("\nInstruction: %s Address: %04X Value: %02X\n", instr_name, addr, value);
 }
 
 void cpu_reset(cpu_t *cpu, c64_bus_t *bus)
@@ -230,14 +264,14 @@ bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
     addr_mode_t addr_mode = get_addressing_mode(opcode);
     opcode_t handler = get_opcode_handler(opcode);
 
-    if (!addr_mode || !handler)
+    if (!handler)
     {
         // Opcode illegale
         return false;
     }
 
     // Calcola indirizzo
-    uint16_t addr = addr_mode(cpu, bus);
+    uint16_t addr = addr_mode ? addr_mode(cpu, bus) : 0;
 
     // Avanza PC
     cpu->pc += get_instruction_size(opcode);

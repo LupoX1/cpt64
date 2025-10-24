@@ -20,5 +20,7 @@ struct memory* bus_get_ram(c64_bus_t*);
 void bus_write(c64_bus_t*, uint16_t, uint8_t);
 uint8_t bus_read(c64_bus_t*, uint16_t);
 
+void bus_log(c64_bus_t*);
+
 #endif // C64_BUS_H
 

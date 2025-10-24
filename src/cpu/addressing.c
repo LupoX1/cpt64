@@ -3,9 +3,6 @@
 #include "memory/memory.h"
 #include "cpu/addressing.h"
 
-uint16_t decode_address_accumulator(cpu_t *cpu, c64_bus_t *bus) { return 0; }
-uint16_t decode_address_implied(cpu_t *cpu, c64_bus_t *bus) { return 0; }
-
 uint16_t decode_address_immediate(cpu_t *cpu, c64_bus_t *bus)
 {
     return cpu_get_pc(cpu) + 1;

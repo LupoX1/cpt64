@@ -291,3 +291,8 @@ uint8_t get_cycles_count(uint8_t opcode)
 {
     return instruction_set[opcode].cycles;
 }
+
+char* get_instruction_name(uint8_t opcode)
+{
+    return instruction_set[opcode].name;
+}

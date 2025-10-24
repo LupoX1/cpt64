@@ -30,6 +30,7 @@ typedef struct cpu cpu_t;
 cpu_t *cpu_create();
 void cpu_destroy(cpu_t *);
 void cpu_dump(cpu_t *, FILE *);
+void cpu_log(cpu_t *, c64_bus_t *);
 void cpu_get_state(cpu_t *, cpu_state_t *);
 void cpu_set_state(cpu_t *, cpu_state_t *);
 void cpu_reset(cpu_t *, struct c64_bus *);

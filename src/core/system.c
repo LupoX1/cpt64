@@ -69,6 +69,11 @@ void c64_dump_state(c64_system_t *sys, const char* filename)
     fclose(file);
 }
 
+void c64_debug(c64_system_t* sys)
+{
+    bus_log(sys->bus);
+}
+
 c64_bus_t* c64_get_bus(c64_system_t* sys)
 {
     if(!sys) return NULL;

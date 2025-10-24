@@ -2,9 +2,9 @@
 #define INSTRUCTIONS_H
 
 #define N_D NULL
-#define ACC decode_address_accumulator
-#define IMP decode_address_implied
-#define IMM &decode_address_immediate
+#define ACC NULL
+#define IMP NULL
+#define IMM decode_address_immediate
 #define ABS decode_address_absolute
 #define ABX decode_address_absolute_x
 #define ABY decode_address_absolute_y
@@ -16,9 +16,10 @@
 #define INX decode_address_indirect_x
 #define INY decode_address_indirect_y
 
-addr_mode_t get_addressing_mode(uint8_t opcode);
-opcode_t get_opcode_handler(uint8_t opcode);
-uint8_t get_instruction_size(uint8_t opcode);
-uint8_t get_cycles_count(uint8_t opcode);
+addr_mode_t get_addressing_mode(uint8_t);
+opcode_t get_opcode_handler(uint8_t);
+uint8_t get_instruction_size(uint8_t);
+uint8_t get_cycles_count(uint8_t);
+char* get_instruction_name(uint8_t);
 
 #endif // INSTRUCTIONS_H
