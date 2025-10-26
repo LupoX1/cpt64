@@ -164,4 +164,5 @@ uint8_t bus_read(c64_bus_t *bus, uint16_t addr)
 void bus_log(c64_bus_t *bus)
 {
     cpu_log(bus->cpu, bus);
+    decode_char_address(bus->vic, bus);
 }

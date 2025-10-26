@@ -18,6 +18,73 @@
 #define LT_BLUE     0x706BED
 #define LT_GREY     0xB2B2B2
 
+char charset[64] = {
+    '@',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+    '[',
+    '_',
+    ']',
+    '_',
+    '_',
+    ' ',
+    '!',
+    '"',
+    '#',
+    '$',
+    '%',
+    '&',
+    '\'',
+    '(',
+    ')',
+    '*',
+    '+',
+    ',',
+    '-',
+    '.',
+    '/',
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    ':',
+    ';',
+    '<',
+    '=',
+    '>',
+    '?'
+};
+
 // color ram $D800-$DBE7 -> color = 0-15 = x0 - xF
 // unused $DBE8-$DBFF
 
@@ -231,6 +298,7 @@ uint8_t vic_read(vic_t *vic, uint16_t addr)
 {
     uint8_t reg = (addr-VIC_ROM_ADDRESS) % 64;
     if(reg == 0x12) return (uint8_t) (vic->raster_counter & 0x00FF);
+    if(reg >= 47) return 0xFF;
     return vic->registers[reg];
 }
 
@@ -247,7 +315,7 @@ uint16_t vic_decode_screen_address(vic_t *vic, c64_bus_t *bus)
     // ADDR = BASE + OFF
     uint16_t bank = bus_read(bus, 0xDD02);
     uint16_t base = ~bank << 6;
-    uint16_t reg = vic->registers[0xD018 - VIC_ROM_ADDRESS];
+    uint16_t reg = vic->registers[0x18];
     uint16_t offset = (reg & 0x00F0) << 10;
 
     return base + offset;
@@ -264,20 +332,21 @@ uint16_t vic_decode_char_rom_address(vic_t *vic, c64_bus_t *bus)
 
 void decode_char_address(vic_t *vic, c64_bus_t *bus)
 {
-    // bank = read ROM addr
-    // set =  read VIC ($018 & 0x02) : 0 = upper, 1 = lower
-    // char = read SCREEN
-    // char * 8 + ( set * 0x800 ) + (bank * )
-
-    uint16_t reg = vic->registers[0xD018 - VIC_ROM_ADDRESS];
-    uint16_t bank = bus_read(bus, 0xDD02);
-    uint16_t charset = (reg & 0x0002) >> 1;
-
-    uint16_t rom_base = (reg & 0x000E) << 10;
-    uint16_t rom_offset = charset * 0x0800;
-    uint16_t screen_base = ~bank << 6;
-    uint16_t screen_offset = (reg & 0x00F0) << 10;
-
-    uint16_t screen = screen_base + screen_offset;
-    uint8_t value = bus_read(bus, screen);
+    char buf[41];
+    uint8_t index = 0;
+    for(uint16_t i = 0x0400; i< 0x07E9; i++)
+    {
+        uint8_t code = bus_read(bus, i);
+        if(code > 63) code = 63;
+        char c = charset[code];
+        buf[index] = c;
+        index++;
+        if(index == 40)
+        {
+            buf[index] = 0;
+            index = 0;
+            printf("%s\n", buf);
+        }
+        
+    }
 }
