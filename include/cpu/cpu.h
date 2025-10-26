@@ -55,4 +55,6 @@ bool cpu_get_flag(cpu_t *, uint8_t);
 void cpu_push(cpu_t *, struct c64_bus *, uint8_t);
 uint8_t cpu_pop(cpu_t *, struct c64_bus *);
 
+void cpu_interrupt(cpu_t *);
+
 #endif // CPU_H

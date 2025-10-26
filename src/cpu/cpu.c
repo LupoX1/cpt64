@@ -32,8 +32,8 @@ cpu_t *cpu_create()
     cpu->cycles = 0;
 
     // cpu->sp = 0xFD;
-    // cpu->sr = FLAG_U | FLAG_I;
-    cpu->int_pending = 0;
+    //cpu->sr = FLAG_U | FLAG_I;
+    //cpu->int_pending = 0;
 
     return cpu;
 }
@@ -306,4 +306,9 @@ bool cpu_step(cpu_t *cpu, c64_bus_t *bus)
 
     // Esegui istruzione normale
     return cpu_execute_instruction(cpu, bus);
+}
+
+void cpu_interrupt(cpu_t *cpu)
+{
+    cpu->int_pending |= INT_IRQ;
 }

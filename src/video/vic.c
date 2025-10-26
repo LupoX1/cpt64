@@ -1,24 +1,25 @@
-#include "video/vic.h"
+#include <stdlib.h>
+#include "c64.h"
 
-#define BLACK 0, 0, 0
-#define WHITE 255, 255, 255
-#define RED 136, 0, 0
-#define CYAN 170, 255, 238
-#define VIOLET 204, 68, 204
-#define GREEN 0, 204, 85
-#define BLUE 0, 0, 170
-#define YELLOW 238, 238, 119
-#define ORANGE 221, 136, 85
-#define BROWN 102, 68, 0
-#define LT_RED 255, 119, 119
-#define DK_GREY 51, 51, 51
-#define GREY 119, 119, 119
-#define LT_GREEN 170, 255, 102
-#define LT_BLUE 0, 136, 255
-#define LT_GREY 187, 187, 187
+#define BLACK       0x000000
+#define WHITE       0xFFFFFF
+#define RED         0x813338
+#define CYAN        0x75CEC8
+#define VIOLET      0x8E3C97
+#define GREEN       0x65AC4D
+#define BLUE        0x2E2C9B
+#define YELLOW      0xEDF171
+#define ORANGE      0x8E5029
+#define BROWN       0x553800
+#define LT_RED      0xC46C71
+#define DK_GREY     0x4A4A4A
+#define GREY        0x7B7B7B
+#define LT_GREEN    0xA9FF9F
+#define LT_BLUE     0x706BED
+#define LT_GREY     0xB2B2B2
 
-//color ram $D800-$DBE7 -> color = 0-15 = x0 - xF
-//unused $DBE8-$DBFF
+// color ram $D800-$DBE7 -> color = 0-15 = x0 - xF
+// unused $DBE8-$DBFF
 
 /*
 
@@ -180,13 +181,103 @@ https://www.cebix.net/VIC-Article.txt
 --+-------+----+----+----+----+-------------------+------------------------
 */
 
-// read 0400-07e7 (1024-2023) = 40 col x 25 row 
+// read 0400-07e7 (1024-2023) = 40 col x 25 row
 // rom chars $D000–$DFFF
 // color ram $D800–$DBFF
 // $D021 background color
 
-
 struct vic
 {
-    int c;
+    uint64_t cycles;
+    uint16_t raster_counter;
+    uint8_t line;
+    uint8_t registers[47];
+    uint8_t color_ram[0x800];
 };
+
+vic_t *vic_create()
+{
+    vic_t *vic = malloc(sizeof(vic_t));
+    if (!vic)
+        return NULL;
+
+    vic->cycles = 0;
+    return vic;
+}
+
+void vic_reset(vic_t *vic)
+{
+}
+
+void vic_tick(vic_t *vic, cpu_t * cpu)
+{
+    vic->cycles++;
+    if(vic->cycles % 63 == 0) vic->raster_counter++;
+    uint16_t raster_compare = vic->registers[0x11] & 0x80;
+    raster_compare = (raster_compare << 1) | vic->registers[0x12];
+    if(vic->raster_counter == raster_compare && (vic->registers[0x2a] & 0x01) ) {
+        vic->registers[0x19] = vic->registers[0x19] | 0x80;
+        cpu_interrupt(cpu);
+    }
+    if(vic->raster_counter >= 312) vic->raster_counter = 0;
+}
+
+void vic_write(vic_t *vic, uint16_t addr, uint8_t value)
+{
+    vic->registers[addr-VIC_ROM_ADDRESS] = value;
+}
+
+uint8_t vic_read(vic_t *vic, uint16_t addr)
+{
+    uint8_t reg = (addr-VIC_ROM_ADDRESS) % 64;
+    if(reg == 0x12) return (uint8_t) (vic->raster_counter & 0x00FF);
+    return vic->registers[reg];
+}
+
+void vic_destroy(vic_t *vic)
+{
+    if (vic)
+        free(vic);
+}
+
+uint16_t vic_decode_screen_address(vic_t *vic, c64_bus_t *bus)
+{
+    // BASE = read IO CIA $DD02 :  (~V) << 6
+    // OFF  = read VIC ($D018 & 0xF0) << 10
+    // ADDR = BASE + OFF
+    uint16_t bank = bus_read(bus, 0xDD02);
+    uint16_t base = ~bank << 6;
+    uint16_t reg = vic->registers[0xD018 - VIC_ROM_ADDRESS];
+    uint16_t offset = (reg & 0x00F0) << 10;
+
+    return base + offset;
+}
+
+uint16_t vic_decode_char_rom_address(vic_t *vic, c64_bus_t *bus)
+{
+    // bank0 = read VIC ($018 & 0x0E) << 10     
+    // bank2 = bank0 + 0x8000
+    uint16_t reg = vic->registers[0xD018 - VIC_ROM_ADDRESS];
+    
+    return (reg & 0x000E) << 10;
+}
+
+void decode_char_address(vic_t *vic, c64_bus_t *bus)
+{
+    // bank = read ROM addr
+    // set =  read VIC ($018 & 0x02) : 0 = upper, 1 = lower
+    // char = read SCREEN
+    // char * 8 + ( set * 0x800 ) + (bank * )
+
+    uint16_t reg = vic->registers[0xD018 - VIC_ROM_ADDRESS];
+    uint16_t bank = bus_read(bus, 0xDD02);
+    uint16_t charset = (reg & 0x0002) >> 1;
+
+    uint16_t rom_base = (reg & 0x000E) << 10;
+    uint16_t rom_offset = charset * 0x0800;
+    uint16_t screen_base = ~bank << 6;
+    uint16_t screen_offset = (reg & 0x00F0) << 10;
+
+    uint16_t screen = screen_base + screen_offset;
+    uint8_t value = bus_read(bus, screen);
+}
