@@ -262,6 +262,11 @@ struct vic
     uint8_t color_ram[0x800];
 };
 
+struct c64_framebuffer
+{
+    uint32_t data[64000];
+};
+
 vic_t *vic_create()
 {
     vic_t *vic = malloc(sizeof(vic_t));
@@ -284,7 +289,7 @@ void vic_tick(vic_t *vic, cpu_t * cpu)
     raster_compare = (raster_compare << 1) | vic->registers[0x12];
     if(vic->raster_counter == raster_compare && (vic->registers[0x2a] & 0x01) ) {
         vic->registers[0x19] = vic->registers[0x19] | 0x80;
-        cpu_interrupt(cpu);
+        cpu_trigger_irq(cpu);
     }
     if(vic->raster_counter >= 312) vic->raster_counter = 0;
 }
@@ -330,7 +335,7 @@ uint16_t vic_decode_char_rom_address(vic_t *vic, c64_bus_t *bus)
     return (reg & 0x000E) << 10;
 }
 
-void decode_char_address(vic_t *vic, c64_bus_t *bus)
+void vic_log_screen(vic_t *vic, c64_bus_t *bus)
 {
     char buf[41];
     uint8_t index = 0;

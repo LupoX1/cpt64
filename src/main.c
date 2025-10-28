@@ -48,11 +48,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderClear(renderer);
-    // SDL_RenderTexture(renderer, texture, NULL, NULL);
-    SDL_RenderPresent(renderer);
-
     // Crea sistema
     c64 = c64_create();
     if (!c64)
@@ -82,8 +77,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
             return 1;
         }
     }
-            c64_debug(c64);
+    
+    c64_debug(c64);
     SDL_Log("Initialization complete");
+
+    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
+    SDL_RenderClear(renderer);
+    // SDL_RenderTexture(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+
     return SDL_APP_CONTINUE;
 }
 
@@ -102,6 +104,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     {
         if(!c64_step(c64)) return SDL_APP_FAILURE;
     }
+
+    
     
     return SDL_APP_CONTINUE;
 }

@@ -5,10 +5,12 @@
 #include "core/bus.h"
 #include "cpu/cpu.h"
 #include "memory/memory.h"
+#include "video/vic.h"
 
 struct c64_system
 {
     c64_bus_t *bus;
+    c64_framebuffer_t *framebuffer;
 };
 
 c64_system_t* c64_create()

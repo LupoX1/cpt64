@@ -7,6 +7,7 @@
 #define COLOR_RAM_SIZE      0x0800
 
 typedef struct vic vic_t;
+typedef struct c64_framebuffer c64_framebuffer_t;
 
 vic_t* vic_create();
 void vic_destroy(vic_t *);
@@ -17,6 +18,6 @@ void vic_tick(vic_t *, cpu_t *);
 void vic_write(vic_t *, uint16_t , uint8_t);
 uint8_t vic_read(vic_t *, uint16_t);
 
-void decode_char_address(vic_t *, c64_bus_t *);
+void vic_log_screen(vic_t *, c64_bus_t *);
 
 #endif // VIC_H

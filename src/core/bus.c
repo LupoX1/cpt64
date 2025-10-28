@@ -96,33 +96,35 @@ memory_t *bus_get_ram(c64_bus_t *bus)
 
 bool is_io(memory_t *mem, uint16_t address)
 {
-    return (read_direct(mem, 1) & CHAREN) && (address >= CHARGEN_ADDRESS) && ((uint32_t)address < (CHARGEN_ADDRESS + CHARGEN_SIZE));
+    return (read_direct(mem, 1) & CHAREN) && (address >= CHARGEN_ADDRESS) && (((uint32_t)address) < (CHARGEN_ADDRESS + CHARGEN_SIZE));
 }
 
 bool is_basic_rom(memory_t *mem, uint16_t address)
 {
-    return (read_direct(mem, 1) & (HIRAM | LORAM)) && (address >= BASIC_ADDRESS) && ((uint32_t)address < (BASIC_ADDRESS + BASIC_SIZE));
+    return (read_direct(mem, 1) & (HIRAM | LORAM)) && (address >= BASIC_ADDRESS) && (((uint32_t)address) < (BASIC_ADDRESS + BASIC_SIZE));
 }
 
 bool is_kernal_rom(memory_t *mem, uint16_t address)
 {
-    return (read_direct(mem, 1) & HIRAM) && (address >= KERNAL_ADDRESS) && ((uint32_t)address < (KERNAL_ADDRESS + KERNAL_SIZE));
+    return (read_direct(mem, 1) & HIRAM) && (address >= KERNAL_ADDRESS) && (((uint32_t)address) < (KERNAL_ADDRESS + KERNAL_SIZE));
 }
 
 bool is_char_rom(memory_t *mem, uint16_t address)
 {
-    return !(read_direct(mem, 1) & CHAREN) && (address >= CHARGEN_ADDRESS) && ((uint32_t)address <= (CHARGEN_ADDRESS + CHARGEN_SIZE));
+    return !(read_direct(mem, 1) & CHAREN) && (address >= CHARGEN_ADDRESS) && (((uint32_t)address) <= (CHARGEN_ADDRESS + CHARGEN_SIZE));
 }
 
 void bus_write_io(c64_bus_t *bus, uint16_t addr, uint8_t value)
 {
+    if(addr >= VIC_ROM_ADDRESS && addr < (VIC_ROM_ADDRESS + VIC_ROM_SIZE)) vic_write(bus->vic, addr, value);
+
+    write_direct(bus->mem, addr, value);
 }
 
 void bus_write(c64_bus_t *bus, uint16_t addr, uint8_t value)
 {
-    // if(is_io(bus, addr)) bus_write_io(bus, addr, value);
-    // else write_direct(bus->mem, addr, value);
-
+    if(is_io(bus->mem, addr)) bus_write_io(bus, addr, value);
+    
     write_direct(bus->mem, addr, value);
 }
 
@@ -164,5 +166,5 @@ uint8_t bus_read(c64_bus_t *bus, uint16_t addr)
 void bus_log(c64_bus_t *bus)
 {
     cpu_log(bus->cpu, bus);
-    decode_char_address(bus->vic, bus);
+    vic_log_screen(bus->vic, bus);
 }
