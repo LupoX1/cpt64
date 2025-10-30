@@ -1,276 +1,167 @@
 #!/bin/bash
 
-# ============================================================================
-# Script di build per progetto C generico
-# Supporta: clean, configure, build, run per Linux/Windows/macOS
-# ============================================================================
-
 set -e
 
-# Colori per output
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${PROJECT_ROOT}/build"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Configurazioni di default
-BUILD_DIR="build"
-BUILD_TYPE="Debug"
-PLATFORM="linux"
-USE_SDL="ON"
-PROJECT_NAME=""
+print_usage() {
+    cat << 'INNEREOF'
+Usage: $0 [COMMAND] [OPTIONS]
 
-# Funzioni di utility
-print_header() {
-    echo -e "${BLUE}=== $1 ===${NC}"
+Commands:
+    config [debug|release]  Configure the project (default: release)
+    build [target]          Build the project or specific target
+    clean                   Clean build directory (keeps external/)
+    clean-all               Clean build and external directories
+    test                    Run tests
+    run-cli                 Run CLI executable
+    run-gui                 Run GUI executable
+    all                     Config + build + test (default)
+    help                    Show this help message
+INNEREOF
 }
 
-print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
+print_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+print_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}✗ $1${NC}"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
-print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
-}
-
-# Estrai il nome del progetto da project.conf
-extract_project_name() {
-    if [ -f "project.conf" ]; then
-        PROJECT_NAME=$(grep "set(PROJECT_NAME" project.conf | sed 's/.*"\(.*\)".*/\1/')
-    fi
-}
-
-# Rileva la piattaforma se non specificata
-detect_platform() {
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        PLATFORM="linux"
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        PLATFORM="macos"
-    elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-        PLATFORM="windows"
-    fi
-}
-
-# Pulisci i file di build
-clean() {
-    print_header "Cleaning build directory"
-    
-    if [ -d "$BUILD_DIR" ]; then
-        rm -rf "$BUILD_DIR"
-        print_success "Build directory removed (external dependencies preserved)"
-    else
-        print_warning "Build directory not found"
-    fi
-}
-
-# Pulisci build e dipendenze esterne
-clean_all() {
-    print_header "Cleaning build directory and external dependencies"
-    
-    if [ -d "$BUILD_DIR" ]; then
-        rm -rf "$BUILD_DIR"
-        print_success "Build directory removed"
-    fi
-    
-    if [ -d "external" ]; then
-        rm -rf external
-        print_success "External dependencies removed"
-    fi
-}
-
-# Configura il progetto con CMake
 configure() {
-    print_header "Configuring project"
+    local build_type="${1:-Release}"
     
-    if [ ! -f "CMakeLists.txt" ]; then
-        print_error "CMakeLists.txt not found in current directory"
-        exit 1
+    if [[ "$build_type" == "debug" ]]; then
+        build_type="Debug"
+    elif [[ "$build_type" == "release" ]]; then
+        build_type="Release"
     fi
     
-    if [ ! -f "project.conf" ]; then
-        print_error "project.conf not found in current directory"
-        exit 1
-    fi
+    print_info "Configuring project (${build_type})..."
     
-    mkdir -p "$BUILD_DIR"
+    cmake -B "${BUILD_DIR}" \
+          -DCMAKE_BUILD_TYPE="${build_type}" \
+          -DBUILD_TESTING=ON \
+          -DBUILD_CLI=ON \
+          -DBUILD_GUI=ON
     
-    local CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_SDL=$USE_SDL"
-    
-    if [ "$PLATFORM" = "windows" ]; then
-        CMAKE_FLAGS="$CMAKE_FLAGS -G 'MinGW Makefiles'"
-    fi
-    
-    cd "$BUILD_DIR"
-    cmake .. $CMAKE_FLAGS
-    cd ..
-    
-    print_success "Configuration completed for $PLATFORM ($BUILD_TYPE)"
+    print_info "Configuration complete!"
 }
 
-# Compila il progetto
 build() {
-    print_header "Building project"
+    local target="$1"
     
-    if [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
-        print_error "Project not configured. Run 'build.sh configure' first"
-        exit 1
+    if [[ ! -d "${BUILD_DIR}" ]]; then
+        print_warn "Build directory not found, configuring first..."
+        configure
     fi
     
-    cd "$BUILD_DIR"
+    print_info "Building project..."
     
-    if [ "$PLATFORM" = "windows" ]; then
-        cmake --build . --config "$BUILD_TYPE"
+    if [[ -z "$target" ]]; then
+        cmake --build "${BUILD_DIR}" -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
     else
-        make -j$(nproc)
+        cmake --build "${BUILD_DIR}" --target "$target" -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
     fi
     
-    cd ..
-    print_success "Build completed successfully"
+    print_info "Build complete!"
 }
 
-# Esegui l'applicazione
-run() {
-    print_header "Running application"
+clean() {
+    print_info "Cleaning build directory (keeping external/)..."
+    rm -rf "${BUILD_DIR}"
+    print_info "Clean complete!"
+}
+
+clean_all() {
+    print_info "Cleaning build and external directories..."
+    rm -rf "${BUILD_DIR}"
+    rm -rf "${PROJECT_ROOT}/external"
+    print_info "Clean all complete!"
+}
+
+run_tests() {
+    if [[ ! -d "${BUILD_DIR}" ]]; then
+        print_warn "Build directory not found, building first..."
+        build
+    fi
     
-    extract_project_name
+    print_info "Running tests..."
+    cd "${BUILD_DIR}" && ctest --output-on-failure
+    cd "${PROJECT_ROOT}"
+    print_info "Tests complete!"
+}
+
+run_cli() {
+    local exe="${BUILD_DIR}/bin/cpt64-cli"
     
-    if [ -z "$PROJECT_NAME" ]; then
-        print_error "Could not extract project name"
+    if [[ ! -f "$exe" ]]; then
+        print_warn "CLI executable not found, building first..."
+        build cpt64-cli
+    fi
+    
+    print_info "Running CLI application..."
+    "$exe"
+}
+
+run_gui() {
+    local exe="${BUILD_DIR}/bin/cpt64-gui"
+    
+    if [[ ! -f "$exe" ]]; then
+        print_warn "GUI executable not found, building first..."
+        build cpt64-gui
+    fi
+    
+    print_info "Running GUI application..."
+    "$exe"
+}
+
+case "${1:-all}" in
+    config)
+        configure "$2"
+        ;;
+    build)
+        build "$2"
+        ;;
+    clean)
+        clean
+        ;;
+    clean-all)
+        clean_all
+        ;;
+    test)
+        run_tests
+        ;;
+    run-cli)
+        run_cli
+        ;;
+    run-gui)
+        run_gui
+        ;;
+    all)
+        if [[ ! -d "" ]]; then
+            configure "${2:-release}"
+        fi
+        build
+        run_tests
+        ;;
+    help|--help|-h)
+        print_usage
+        ;;
+    *)
+        print_error "Unknown command: $1"
+        print_usage
         exit 1
-    fi
-    
-    local exe_path=""
-    
-    case "$PLATFORM" in
-        linux|macos)
-            exe_path="$BUILD_DIR/$PROJECT_NAME"
-            ;;
-        windows)
-            exe_path="$BUILD_DIR/$BUILD_TYPE/$PROJECT_NAME.exe"
-            ;;
-    esac
-    
-    if [ ! -f "$exe_path" ]; then
-        print_error "Executable not found: $exe_path"
-        print_warning "Make sure to build the project first with: build.sh build"
-        exit 1
-    fi
-    
-    print_success "Executing $exe_path"
-    echo ""
-    "$exe_path"
-}
-
-# Visualizza l'aiuto
-show_help() {
-    cat << EOF
-${BLUE}=== Generic C Project Build Script ===${NC}
-
-Usage: ./build.sh [command] [options]
-
-Commands:
-    clean           Remove build directory (keep external deps)
-    clean-all       Remove build AND external dependencies
-    configure       Configure project with CMake
-    build           Compile the project
-    run             Run the compiled application
-    help            Show this help message
-
-Options (use with commands):
-    -t|--type       Build type: Debug (default) or Release
-    -p|--platform   Target platform: linux (default), windows, or macos
-    --sdl           Enable SDL3 support: ON (default) or OFF
-    
-Examples:
-    ./build.sh clean                          # Clean build (keep SDL3)
-    ./build.sh clean-all                      # Clean everything
-    ./build.sh configure -t Release           # Configure for Release build
-    ./build.sh configure -p windows           # Configure for Windows
-    ./build.sh configure --sdl OFF            # Configure without SDL3
-    ./build.sh build                          # Build the project
-    ./build.sh run                            # Run the application
-    
-Full workflow:
-    ./build.sh configure -t Release
-    ./build.sh build
-    ./build.sh run
-    
-After first build, you can just do:
-    ./build.sh build   # Recompile (SDL3 already cached in external/)
-    ./build.sh run
-EOF
-}
-
-# Parse degli argomenti
-parse_args() {
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -t|--type)
-                BUILD_TYPE="$2"
-                shift 2
-                ;;
-            -p|--platform)
-                PLATFORM="$2"
-                shift 2
-                ;;
-            --sdl)
-                USE_SDL="$2"
-                shift 2
-                ;;
-            *)
-                shift
-                ;;
-        esac
-    done
-}
-
-# Main
-main() {
-    if [ $# -eq 0 ]; then
-        show_help
-        exit 0
-    fi
-    
-    local command=$1
-    shift
-    
-    detect_platform
-    parse_args "$@"
-    
-    print_header "Generic C Project Builder"
-    echo "Platform: $PLATFORM | Build: $BUILD_TYPE | SDL: $USE_SDL"
-    echo ""
-    
-    case $command in
-        clean)
-            clean
-            ;;
-        clean-all)
-	    clean_all
-	    ;;
-        configure)
-            configure
-            ;;
-        build)
-            build
-            ;;
-        run)
-            run
-            ;;
-        help|--help|-h)
-            show_help
-            ;;
-        *)
-            print_error "Unknown command: $command"
-            echo "Use './build.sh help' to see available commands"
-            exit 1
-            ;;
-    esac
-}
-
-main "$@"
+        ;;
+esac
