@@ -7,3 +7,7 @@ target_link_libraries(cpt64-cli PRIVATE
     log
     video
 )
+
+target_compile_definitions(cpt64-cli PRIVATE
+    $<$<CONFIG:Debug>:DEBUG>
+)

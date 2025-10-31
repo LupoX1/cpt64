@@ -4,7 +4,7 @@
 int main(void) {
     printf("Testing log module...\n");
     
-    log_init(NULL);
+    log_init(LOG_LEVEL_DEBUG);
     
     log_debug("This is a debug message");
     log_info("This is an info message");

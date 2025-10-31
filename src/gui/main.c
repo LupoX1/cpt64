@@ -1,6 +1,5 @@
 #include "core/app.h"
 #include "log/log.h"
-#include "log/log_raylib.h"
 #include <raylib.h>
 
 #define RAYGUI_IMPLEMENTATION
@@ -13,7 +12,11 @@ int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
     
-    log_init(log_callback_raylib);
+    #ifdef DEBUG
+        log_init_raylib(LOG_LEVEL_DEBUG);
+    #else
+        log_init_raylib(LOG_LEVEL_INFO);
+    #endif
     
     log_info("Starting GUI application with raylib + raygui");
     

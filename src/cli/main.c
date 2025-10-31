@@ -8,7 +8,11 @@ int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
     
-    log_init(NULL);
+    #ifdef DEBUG
+        log_init(LOG_LEVEL_DEBUG);
+    #else
+        log_init(LOG_LEVEL_INFO);
+    #endif
     
     log_info("Starting CLI application");
     

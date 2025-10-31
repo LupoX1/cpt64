@@ -4,7 +4,7 @@
 #include <assert.h>
 
 int main(void) {
-    log_init(NULL);
+    log_init(LOG_LEVEL_DEBUG);
     
     printf("Testing video module...\n");
     

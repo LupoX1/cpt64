@@ -10,16 +10,17 @@ typedef enum {
     LOG_LEVEL_ERROR
 } log_level_t;
 
-typedef void (*log_callback_t)(log_level_t level, const char *fmt, va_list args);
+typedef struct log_context log_context_t;
 
-void log_init(log_callback_t cb);
+extern log_context_t *g_context;
+
+void log_init(log_level_t level);
+void log_init_raylib(log_level_t level);
 void log_shutdown(void);
 
-void log_message(log_level_t level, const char *fmt, ...);
-
-#define log_debug(fmt, ...) log_message(LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
-#define log_info(fmt, ...) log_message(LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
-#define log_warn(fmt, ...) log_message(LOG_LEVEL_WARN,  fmt, ##__VA_ARGS__)
-#define log_error(fmt, ...) log_message(LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
+void log_debug(const char *fmt, ...);
+void log_info(const char *fmt, ...);
+void log_warn(const char *fmt, ...);
+void log_error(const char *fmt, ...);
 
 #endif // LOG_H

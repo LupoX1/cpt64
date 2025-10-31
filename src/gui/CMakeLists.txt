@@ -14,4 +14,5 @@ target_link_libraries(cpt64-gui PRIVATE
 target_compile_definitions(cpt64-gui PRIVATE
     USE_RAYLIB
     USE_RAYGUI
+    $<$<CONFIG:Debug>:DEBUG>
 )
