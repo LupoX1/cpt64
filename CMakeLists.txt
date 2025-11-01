@@ -5,8 +5,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(BUILD_TESTING "Build tests" ON)
-option(BUILD_CLI "Build CLI executable" ON)
-option(BUILD_GUI "Build GUI executable" ON)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -24,31 +22,29 @@ include(FetchContent)
 # Directory per dipendenze esterne
 set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/external")
 
-if(BUILD_GUI)
-    message(STATUS "Fetching raylib...")
-    FetchContent_Declare(
-        raylib
-        GIT_REPOSITORY https://github.com/raysan5/raylib.git
-        GIT_TAG master
-        GIT_SHALLOW TRUE
-    )
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(raylib)
+message(STATUS "Fetching raylib...")
+FetchContent_Declare(
+    raylib
+    GIT_REPOSITORY https://github.com/raysan5/raylib.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(raylib)
 
-    message(STATUS "Fetching raygui...")
-    FetchContent_Declare(
-        raygui
-        GIT_REPOSITORY https://github.com/raysan5/raygui.git
-        GIT_TAG master
-        GIT_SHALLOW TRUE
-    )
-    FetchContent_MakeAvailable(raygui)
-    
-    # raygui è header-only
-    add_library(raygui INTERFACE)
-    target_include_directories(raygui INTERFACE ${raygui_SOURCE_DIR}/src)
-endif()
+message(STATUS "Fetching raygui...")
+FetchContent_Declare(
+    raygui
+    GIT_REPOSITORY https://github.com/raysan5/raygui.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(raygui)
+
+# raygui è header-only
+add_library(raygui INTERFACE)
+target_include_directories(raygui INTERFACE ${raygui_SOURCE_DIR}/src)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
@@ -59,13 +55,7 @@ add_subdirectory(src/core)
 add_subdirectory(src/video)
 add_subdirectory(src/log)
 
-if(BUILD_CLI)
-    add_subdirectory(src/cli)
-endif()
-
-if(BUILD_GUI)
-    add_subdirectory(src/gui)
-endif()
+add_subdirectory(src/app)
 
 if(BUILD_TESTING)
     enable_testing()

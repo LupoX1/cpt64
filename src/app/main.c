@@ -13,9 +13,9 @@ int main(int argc, char *argv[]) {
     (void)argv;
     
     #ifdef DEBUG
-        log_init_raylib(LOG_LEVEL_DEBUG);
+        SetTraceLogLevel(LOG_DEBUG);
     #else
-        log_init_raylib(LOG_LEVEL_INFO);
+        SetTraceLogLevel(LOG_INFO);
     #endif
     
     log_info("Starting GUI application with raylib + raygui");
@@ -93,7 +93,6 @@ int main(int argc, char *argv[]) {
     CloseWindow();
     
     app_shutdown(app);
-    log_shutdown();
     
     return 0;
 }

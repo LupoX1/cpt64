@@ -10,14 +10,6 @@ typedef enum {
     LOG_LEVEL_ERROR
 } log_level_t;
 
-typedef struct log_context log_context_t;
-
-extern log_context_t *g_context;
-
-void log_init(log_level_t level);
-void log_init_raylib(log_level_t level);
-void log_shutdown(void);
-
 void log_debug(const char *fmt, ...);
 void log_info(const char *fmt, ...);
 void log_warn(const char *fmt, ...);

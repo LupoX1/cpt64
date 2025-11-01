@@ -4,8 +4,6 @@
 #include <assert.h>
 
 int main(void) {
-    log_init(LOG_LEVEL_DEBUG);
-    
     printf("Testing core module...\n");
     
     app_t *app = app_init("Test", "1.0");
@@ -18,6 +16,5 @@ int main(void) {
     app_shutdown(app);
     
     printf("Core tests passed!\n");
-    log_shutdown();
     return 0;
 }

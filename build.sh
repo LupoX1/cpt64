@@ -20,8 +20,7 @@ Commands:
     clean                   Clean build directory (keeps external/)
     clean-all               Clean build and external directories
     test                    Run tests
-    run-cli                 Run CLI executable
-    run-gui                 Run GUI executable
+    run                     Run executable
     all                     Config + build + test (default)
     help                    Show this help message
 INNEREOF
@@ -52,9 +51,7 @@ configure() {
     
     cmake -B "${BUILD_DIR}" \
           -DCMAKE_BUILD_TYPE="${build_type}" \
-          -DBUILD_TESTING=ON \
-          -DBUILD_CLI=ON \
-          -DBUILD_GUI=ON
+          -DBUILD_TESTING=ON
     
     print_info "Configuration complete!"
 }
@@ -103,27 +100,15 @@ run_tests() {
     print_info "Tests complete!"
 }
 
-run_cli() {
-    local exe="${BUILD_DIR}/bin/cpt64-cli"
+run() {
+    local exe="${BUILD_DIR}/bin/cpt64"
     
     if [[ ! -f "$exe" ]]; then
-        print_warn "CLI executable not found, building first..."
-        build cpt64-cli
+        print_warn "Executable not found, building first..."
+        build cpt64
     fi
     
-    print_info "Running CLI application..."
-    "$exe"
-}
-
-run_gui() {
-    local exe="${BUILD_DIR}/bin/cpt64-gui"
-    
-    if [[ ! -f "$exe" ]]; then
-        print_warn "GUI executable not found, building first..."
-        build cpt64-gui
-    fi
-    
-    print_info "Running GUI application..."
+    print_info "Running application..."
     "$exe"
 }
 
@@ -143,11 +128,8 @@ case "${1:-all}" in
     test)
         run_tests
         ;;
-    run-cli)
-        run_cli
-        ;;
-    run-gui)
-        run_gui
+    run)
+        run
         ;;
     all)
         if [[ ! -d "" ]]; then

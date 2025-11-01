@@ -1,26 +1,24 @@
-#include "log_internal.h"
+#include "log/log.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <raylib.h>
 
-// Contesto globale
-log_context_t *g_context = NULL;
-
-void log_shutdown(void) {
-    if (!g_context) return;
-    
-    free(g_context);
-    g_context = NULL;
+static int level_to_raylib(log_level_t level) {
+    switch(level) {
+        case LOG_LEVEL_DEBUG: return LOG_DEBUG;
+        case LOG_LEVEL_INFO:  return LOG_INFO;
+        case LOG_LEVEL_WARN:  return LOG_WARNING;
+        case LOG_LEVEL_ERROR: return LOG_ERROR;
+        default: return LOG_INFO;
+    }
 }
 
-static void log_message(log_level_t level, const char *fmt, va_list args) {
-    if (!g_context) return;
-    if (level < g_context->min_level) return;
-    
+static void log_message(log_level_t level, const char *fmt, va_list args)
+{    
     char buffer[2048];
     vsnprintf(buffer, sizeof(buffer), fmt, args);
-    
-    g_context->ops->output(level, buffer);
+    TraceLog(level_to_raylib(level), buffer);
 }
 
 void log_debug(const char *fmt, ...) {

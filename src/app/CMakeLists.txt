@@ -1,8 +1,8 @@
-add_executable(cpt64-gui
+add_executable(cpt64
     main.c
 )
 
-target_link_libraries(cpt64-gui PRIVATE
+target_link_libraries(cpt64 PRIVATE
     core
     log
     video
@@ -11,7 +11,7 @@ target_link_libraries(cpt64-gui PRIVATE
     m
 )
 
-target_compile_definitions(cpt64-gui PRIVATE
+target_compile_definitions(cpt64 PRIVATE
     USE_RAYLIB
     USE_RAYGUI
     $<$<CONFIG:Debug>:DEBUG>

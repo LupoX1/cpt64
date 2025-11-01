@@ -4,7 +4,6 @@
 #include <assert.h>
 
 int main(void) {
-    log_init(LOG_LEVEL_DEBUG);
     
     printf("Testing video module...\n");
     
@@ -15,6 +14,5 @@ int main(void) {
     video_shutdown(ctx);
     
     printf("Video tests passed!\n");
-    log_shutdown();
     return 0;
 }
