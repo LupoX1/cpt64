@@ -11,7 +11,10 @@
 #include "cpu/instructions.h"
 #include "video/vic.h"
 
-#define C64_CLOCK_PAL       985248
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 480
+
+#define C64_CLOCK_PAL        985248
 #define C64_CLOCK_NTSC      1022727
 #define C64_CYCLES_PER_LINE 63
 #define C64_LINES_PER_FRAME 312

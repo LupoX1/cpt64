@@ -76,7 +76,7 @@ bool bus_clock(c64_bus_t *bus)
     if (!bus)
         return false;
 
-    vic_tick(bus->vic, bus->cpu);
+    vic_tick(bus->vic, bus);
     return cpu_step(bus->cpu, bus);
 }
 
@@ -167,4 +167,9 @@ void bus_log(c64_bus_t *bus)
 {
     cpu_log(bus->cpu, bus);
     vic_log_screen(bus->vic, bus);
+}
+
+void bus_trigger_cpu_irq(c64_bus_t *bus)
+{
+    cpu_trigger_irq(bus->cpu);
 }

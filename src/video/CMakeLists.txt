@@ -1,5 +1,6 @@
 add_library(video STATIC
     video.c
+    vic.c
 )
 
 target_include_directories(video PUBLIC

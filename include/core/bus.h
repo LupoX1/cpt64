@@ -22,5 +22,6 @@ uint8_t bus_read(c64_bus_t*, uint16_t);
 
 void bus_log(c64_bus_t*);
 
-#endif // C64_BUS_H
+void bus_trigger_cpu_irq(c64_bus_t *);
 
+#endif // C64_BUS_H

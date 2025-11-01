@@ -6,7 +6,7 @@
 int main(void) {
     printf("Testing core module...\n");
     
-    app_t *app = app_init("Test", "1.0");
+    app_t *app = app_create("Test", "1.0");
     assert(app != NULL);
     assert(app_is_running(app) == 1);
     

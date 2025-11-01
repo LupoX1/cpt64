@@ -17,6 +17,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+include(${CMAKE_SOURCE_DIR}/project.conf)
+configure_file(
+    ${CMAKE_SOURCE_DIR}/include/config.h.in
+    ${CMAKE_BINARY_DIR}/include/config.h
+)
+
 include(FetchContent)
 
 # Directory per dipendenze esterne
@@ -47,11 +53,13 @@ add_library(raygui INTERFACE)
 target_include_directories(raygui INTERFACE ${raygui_SOURCE_DIR}/src)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
 )
 
 add_subdirectory(src/core)
+add_subdirectory(src/cpu)
+add_subdirectory(src/memory)
 add_subdirectory(src/video)
 add_subdirectory(src/log)
 
@@ -70,6 +78,6 @@ elseif(WIN32)
     message(WARNING "Windows build not yet supported")
 endif()
 
-message(STATUS "Project: cpt64")
+message(STATUS "Project: ${PROJECT_NAME} Version: ${PROJECT_VERSION}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")

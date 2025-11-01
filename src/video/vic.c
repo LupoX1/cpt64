@@ -281,7 +281,7 @@ void vic_reset(vic_t *vic)
 {
 }
 
-void vic_tick(vic_t *vic, cpu_t * cpu)
+void vic_tick(vic_t *vic, c64_bus_t *bus)
 {
     vic->cycles++;
     if(vic->cycles % 63 == 0) vic->raster_counter++;
@@ -289,7 +289,7 @@ void vic_tick(vic_t *vic, cpu_t * cpu)
     raster_compare = (raster_compare << 1) | vic->registers[0x12];
     if(vic->raster_counter == raster_compare && (vic->registers[0x2a] & 0x01) ) {
         vic->registers[0x19] = vic->registers[0x19] | 0x80;
-        cpu_trigger_irq(cpu);
+        bus_trigger_cpu_irq(bus);
     }
     if(vic->raster_counter >= 312) vic->raster_counter = 0;
 }
