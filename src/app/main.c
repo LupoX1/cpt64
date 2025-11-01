@@ -1,4 +1,3 @@
-#include "c64.h"
 #include "core/app.h"
 #include "log/log.h"
 #include <stdint.h>
@@ -6,6 +5,8 @@
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
+
+#define NANOS_PER_SECOND 1000000000;
 
 void render(app_t *app)
 {
@@ -16,50 +17,16 @@ void render(app_t *app)
     
     if (GuiButton((Rectangle){70, 410, 360, 40}, "Quit Application")) {
         log_info("Quit button pressed");
-        EndDrawing();
-        CloseWindow();
-        return;
+        app_stop(app);
     }
     
-    DrawText(TextFormat("FPS: %d", GetFPS()), 10, WINDOW_HEIGHT - 30, 20, LIGHTGRAY);
+    DrawText(TextFormat("FPS: %d", GetFPS()), 10, 10, 30, LIGHTGRAY);
     EndDrawing();
 }
 
-void update(app_t *app, uint64_t t, uint64_t dt)
+uint64_t get_time(void)
 {
-    log_debug("Update %lu %lu", t, dt);
-}
-
-void main_loop(app_t *app)
-{
-    uint64_t nanos_per_second = 1000000000;
-    uint64_t max_frame_time = nanos_per_second / 4;
-
-    uint64_t t = 0;
-    uint64_t dt = C64_CLOCK_PAL;
-
-    uint64_t currentTime = GetTime() * nanos_per_second;
-    uint64_t accumulator = 0;
-
-    while (!WindowShouldClose())
-    {
-        uint64_t newTime = GetTime() * nanos_per_second;
-        uint64_t frameTime = newTime - currentTime;
-        if ( frameTime > max_frame_time ) frameTime = max_frame_time;
-        currentTime = newTime;
-
-        accumulator += frameTime;
-
-        while ( accumulator >= dt )
-        {
-            update(app, t, dt);
-            t += dt;
-            accumulator -= dt;
-        }
-
-        render(app);
-    }
-
+    return GetTime() * NANOS_PER_SECOND;
 }
 
 int main(int argc, char *argv[]) {
@@ -80,16 +47,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, app_get_name(app));
+    InitWindow(app_get_window_width(app), app_get_window_height(app), app_get_name(app));
     SetTargetFPS(50);
     
     log_info("GUI initialized successfully with raylib + raygui");
     
-    app_start(app);
-    main_loop(app);
+    app_main_loop(app, get_time, render);
     
-    log_info("Shutting down GUI application");
-    app_shutdown(app);
+    CloseWindow();
     
     return 0;
 }
