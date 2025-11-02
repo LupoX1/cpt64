@@ -1,5 +1,5 @@
 add_library(core STATIC
-    app.c
+    emu.c
     system.c
     bus.c
 )
