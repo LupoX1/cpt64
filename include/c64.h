@@ -16,8 +16,14 @@
 
 #define C64_CLOCK_PAL        985248
 #define C64_CLOCK_NTSC      1022727
-#define C64_CYCLES_PER_LINE 63
-#define C64_LINES_PER_FRAME 312
+
+#define VIC_FRAME_WIDTH        320
+#define VIC_FRAME_HEIGHT       200
+#define VIC_FIRST_VISIBLE_LINE  48
+#define VIC_VISIBLE_LINES      200
+#define VIC_TOTAL_LINES        312
+#define VIC_CYCLES_PER_LINE     63
+#define VIC_SUBCYCLES_PER_CPU    8
 
 #define RAM_SIZE        0x10000
 #define BASIC_SIZE      0x2000

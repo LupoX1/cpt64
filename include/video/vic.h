@@ -18,6 +18,8 @@ void vic_tick(vic_t *, c64_bus_t *);
 void vic_write(vic_t *, uint16_t , uint8_t);
 uint8_t vic_read(vic_t *, uint16_t);
 
+uint32_t *vic_get_framebuffer(vic_t *vic);
+
 void vic_log_screen(vic_t *, c64_bus_t *);
 
 #endif // VIC_H

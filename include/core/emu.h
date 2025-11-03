@@ -24,7 +24,7 @@ void emu_update(emu_t *emu, uint64_t t, uint64_t dt);
 // Funzioni da implementare (dichiarazioni)
 // Emulatore
 void emu_load_rom(emu_t *emu, const char *type, const char *path);  // type: "basic", "kernal", "charset"
-void emu_load_program(emu_t *emu, const char *path);
+bool emu_load_program(emu_t *emu, const char *path, uint16_t addr);
 void emu_start(emu_t *emu);
 void emu_pause(emu_t *emu);
 void emu_resume(emu_t *emu);
@@ -34,6 +34,7 @@ bool emu_is_running(emu_t *emu);
 bool emu_is_paused(emu_t *emu);
 void emu_save_state(emu_t *emu, const char *path);
 void emu_load_state(emu_t *emu, const char *path);
+void emu_reset(emu_t *emu);
 
 // Informazioni stato
 uint16_t emu_get_pc(emu_t *emu);
@@ -44,6 +45,6 @@ uint8_t emu_get_sp(emu_t *emu);
 uint8_t emu_get_status(emu_t *emu);
 const char* emu_get_current_instruction(emu_t *emu);
 uint8_t emu_read_memory(emu_t *emu, uint16_t addr);
-//Texture2D* emu_get_screen_texture(void);  // Ritorna texture 320x200 del C64
+uint32_t *emu_get_framebuffer(emu_t *emu);  // Ritorna texture 320x200 del C64
 
 #endif // EMU_H

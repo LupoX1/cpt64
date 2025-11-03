@@ -144,6 +144,8 @@ uint8_t bus_read_io(c64_bus_t *bus, uint16_t addr)
         return 0xFF; // CIA1 Port A (nessun tasto premuto)
     case 0xDC01:
         return 0xFF; // CIA1 Port B
+    case 0xDD00:
+        return 0xFF;
     default:
         return read_direct(bus->mem, addr);
     }
@@ -166,10 +168,15 @@ uint8_t bus_read(c64_bus_t *bus, uint16_t addr)
 void bus_log(c64_bus_t *bus)
 {
     cpu_log(bus->cpu, bus);
-    vic_log_screen(bus->vic, bus);
+    //vic_log_screen(bus->vic, bus);
 }
 
 void bus_trigger_cpu_irq(c64_bus_t *bus)
 {
     cpu_trigger_irq(bus->cpu);
+}
+
+uint32_t *bus_get_framebuffer(c64_bus_t *bus)
+{
+    return vic_get_framebuffer(bus->vic);
 }

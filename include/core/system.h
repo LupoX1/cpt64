@@ -20,4 +20,6 @@ c64_bus_t* c64_get_bus(c64_system_t*);
 
 void c64_destroy(c64_system_t*);
 
+uint32_t *c64_get_framebuffer(c64_system_t* sys);
+
 #endif // C64_SYSTEM_H

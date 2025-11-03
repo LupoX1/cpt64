@@ -1,22 +1,315 @@
 #include <stdlib.h>
+#include <string.h>
 #include "c64.h"
+#include "log/log.h"
 
-#define BLACK       0x000000
-#define WHITE       0xFFFFFF
-#define RED         0x813338
-#define CYAN        0x75CEC8
-#define VIOLET      0x8E3C97
-#define GREEN       0x65AC4D
-#define BLUE        0x2E2C9B
-#define YELLOW      0xEDF171
-#define ORANGE      0x8E5029
-#define BROWN       0x553800
-#define LT_RED      0xC46C71
-#define DK_GREY     0x4A4A4A
-#define GREY        0x7B7B7B
-#define LT_GREEN    0xA9FF9F
-#define LT_BLUE     0x706BED
-#define LT_GREY     0xB2B2B2
+#define BLACK 0x000000FF
+#define WHITE 0xFFFFFFFF
+#define RED 0x813338FF
+#define CYAN 0x75CEC8FF
+#define VIOLET 0x8E3C97FF
+#define GREEN 0x65AC4DFF
+#define BLUE 0x2E2C9BFF
+#define YELLOW 0xEDF171FF
+#define ORANGE 0x8E5029FF
+#define BROWN 0x553800FF
+#define LT_RED 0xC46C71FF
+#define DK_GREY 0x4A4A4AFF
+#define GREY 0x7B7B7BFF
+#define LT_GREEN 0xA9FF9FFF
+#define LT_BLUE 0x706BEDFF
+#define LT_GREY 0xB2B2B2FF
+
+/* Inizializza la palette del C64
+void InitC64Palette(void) {
+    palette[0]  = (Color){0x00,0x00,0x00,255}; // Nero
+    palette[1]  = (Color){0xFF,0xFF,0xFF,255}; // Bianco
+    palette[2]  = (Color){0x68,0x37,0x2B,255}; // Rosso
+    palette[3]  = (Color){0x70,0xA4,0xB2,255}; // Ciano
+    palette[4]  = (Color){0x6F,0x3D,0x86,255}; // Viola
+    palette[5]  = (Color){0x58,0x8D,0x43,255}; // Verde
+    palette[6]  = (Color){0x35,0x28,0x79,255}; // Blu
+    palette[7]  = (Color){0xB8,0xC7,0x6F,255}; // Giallo
+    palette[8]  = (Color){0x6F,0x4F,0x25,255}; // Arancio
+    palette[9]  = (Color){0x43,0x39,0x00,255}; // Marrone
+    palette[10] = (Color){0x9A,0x67,0x59,255}; // Rosa chiaro
+    palette[11] = (Color){0x44,0x44,0x44,255}; // Grigio scuro
+    palette[12] = (Color){0x6C,0x6C,0x6C,255}; // Grigio medio
+    palette[13] = (Color){0x9A,0xD2,0x84,255}; // Verde chiaro
+    palette[14] = (Color){0x6C,0x5E,0xB5,255}; // Azzurro
+    palette[15] = (Color){0x95,0x95,0x95,255}; // Grigio chiaro
+}*/
+
+uint32_t palette[16] = {
+    BLACK,
+    WHITE,
+    RED,
+    CYAN,
+    VIOLET,
+    GREEN,
+    BLUE,
+    YELLOW,
+    ORANGE,
+    BROWN,
+    LT_RED,
+    DK_GREY,
+    GREY,
+    LT_GREEN,
+    LT_BLUE,
+    LT_GREY};
+
+struct vic
+{
+    uint64_t cycles;
+    uint16_t raster_counter;
+    uint8_t cycle_in_line;
+    uint8_t line;
+    uint8_t subcycle;
+    uint8_t registers[0x40];
+    uint8_t color_ram[0x800];
+    uint32_t framebuffer[VIC_FRAME_WIDTH * VIC_FRAME_HEIGHT];
+};
+
+struct c64_framebuffer
+{
+    uint32_t data[VIC_FRAME_WIDTH * VIC_FRAME_HEIGHT];
+};
+
+// Read VIC bank from CIA2 ($DD00) — but here we read a mem location the emulator should map.
+// The typical CIA2 register for VIC bank is $DD00 bits 0-1 (but actual port may differ).
+// For safety, caller should ensure $DD00 is wired to mem_read callback.
+// We'll read mem_read(0xDD00) directly.
+uint32_t vic_get_bank_base(vic_t *vic, c64_bus_t *bus)
+{
+    uint8_t cia2 = bus_read(bus, 0xDD00);
+    uint8_t bank = cia2 & 0x03;     // 0..3
+    return (uint32_t)bank * 0x4000; // 16KB banks
+}
+
+// Compute screen base (offset inside selected bank) and return absolute 16-bit address
+uint32_t vic_get_screen_base(vic_t *vic, c64_bus_t *bus)
+{
+    uint8_t d018 = vic->registers[0x18];
+    uint32_t bank_base = vic_get_bank_base(vic, bus);
+    uint32_t screen_offset_kb = (d018 >> 4) & 0x0F; // bits 4-7
+    return bank_base + (screen_offset_kb * 1024);
+}
+
+// Compute charset base (offset inside bank). According to docs bits 1..3 specify 2KB blocks.
+// Bits weights 2,4,8 — so ( (d018 & 0x0E) >> 1 ) * 2048
+uint32_t vic_get_charset_base(vic_t *vic, c64_bus_t *bus)
+{
+    uint8_t d018 = vic->registers[0x18];
+    uint32_t bank_base = vic_get_bank_base(vic, bus);
+    uint32_t char_block = ((d018 & 0x0E) >> 1) & 0x07; // 0..7
+    return bank_base + (char_block * 2048);
+}
+
+/* -------------------------
+   Core: render one character cell (8 pixels) at given raster line and column
+   ------------------------- */
+void vic_render_charcell_at(vic_t *vic, c64_bus_t *bus, int raster_line, int column)
+{
+    // determine which row of characters and which subrow inside character
+    int vis_row = (raster_line - VIC_FIRST_VISIBLE_LINE) / 8;     // 0..24
+    int row_in_char = (raster_line - VIC_FIRST_VISIBLE_LINE) % 8; // 0..7
+    if (vis_row < 0 || vis_row >= 25)
+        return; // outside text area
+
+    // compute addresses
+    uint32_t screen_base = vic_get_screen_base(vic, bus);
+    uint16_t screen_addr = (uint16_t)(screen_base + (vis_row * 40) + column);
+    uint8_t char_index = bus_read(bus, screen_addr);
+
+    // color RAM: always at $D800 + offset (CPU view)
+    uint16_t color_addr = 0xD800 + (vis_row * 40) + column;
+    uint8_t color_byte = bus_read(bus, color_addr) & 0x0F;
+    uint8_t fg_color = color_byte;
+    uint8_t bg_color = vic->registers[0x21] & 0x0F; // $D021 background color
+
+    // charset fetch
+    uint32_t charset_base = vic_get_charset_base(vic, bus);
+    uint16_t glyph_addr = (uint16_t)(charset_base + (char_index * 8) + row_in_char);
+    uint8_t glyph = bus_read(bus, glyph_addr);
+
+    log_debug("screen_base %u screen_addr %u char_index %u\n", screen_base, screen_addr, char_index);
+    log_debug("color_addr %u color_byte %u\n", color_addr, color_byte);
+    log_debug("charset_base %u glyph_addr %u glyph %u\n", charset_base, glyph_addr, glyph);
+    log_debug("fg_color %u palette %u bg_color %u palette %u\n", fg_color, palette[fg_color], bg_color, palette[bg_color]);
+
+    // destination in framebuffer
+    int x0 = column * 8;
+    int y = raster_line - VIC_FIRST_VISIBLE_LINE;
+    if (y < 0 || y >= VIC_FRAME_HEIGHT)
+        return;
+
+        // expand bits: bit7 -> leftmost pixel
+    for (int bit = 7; bit >= 0; --bit)
+    {
+        uint8_t pixel = (glyph & (1 << bit)) ? fg_color : bg_color;
+        vic->framebuffer[y * VIC_FRAME_WIDTH + x0 + (7-bit)] = palette[pixel];
+    }
+}
+
+/* -------------------------
+   Render one raster line (all 40 columns) in text mode
+   ------------------------- */
+void vic_render_raster_line_textmode(vic_t *vic, c64_bus_t *bus, int raster_line)
+{
+    // Skip if DEN (display enable) is 0: draw border color instead
+    bool den = (vic->registers[0x11] & 0x10) != 0; // $D011 bit4
+    uint8_t border_color = vic->registers[0x20] & 0x0F;
+    int y = raster_line - VIC_FIRST_VISIBLE_LINE;
+    if (y < 0 || y >= VIC_FRAME_HEIGHT)
+        return;
+
+    if (!den)
+    {
+        // fill whole scanline with border color
+        for (int i = 0; i < VIC_FRAME_WIDTH; ++i){
+            vic->framebuffer[y * VIC_FRAME_WIDTH + i] = palette[border_color];
+        }
+        return;
+    }
+
+    // for text mode, render 40 columns
+    for (int col = 0; col < 40; ++col)
+    {
+        vic_render_charcell_at(vic, bus, raster_line, col);
+    }
+}
+
+uint16_t get_raster_compare(vic_t *vic)
+{
+    uint16_t high = (uint16_t)vic->registers[0x11] & 0x00FF;
+    uint16_t low = (uint16_t)vic->registers[0x12] & 0x00FF;
+    return ((high & 0x0080) << 1) | low;
+}
+
+/* -------------------------
+   Advance VIC by a given number of VIC cycles (subcycles).
+   The caller can convert CPU cycles -> vic cycles: vic_cycles = cpu_cycles * VIC_SUBCYCLES_PER_CPU
+   This advances raster counters, optionally renders visible lines, and handles raster IRQs.
+   ------------------------- */
+void vic_step_vic_cycles(vic_t *vic, c64_bus_t *bus, int vic_cycles)
+{
+    while (vic_cycles > 0)
+    {
+        // advance one VIC cycle
+        vic->cycle_in_line++;
+        if (vic->cycle_in_line >= VIC_CYCLES_PER_LINE)
+        {
+            // end of line: render if visible, advance raster
+            // Render the line: we render when the line falls in visible area
+            int current_line = vic->raster_counter;
+            if (current_line >= VIC_FIRST_VISIBLE_LINE && current_line < (VIC_FIRST_VISIBLE_LINE + VIC_VISIBLE_LINES))
+            {
+                vic_render_raster_line_textmode(vic, bus, current_line);
+            }
+            vic->cycle_in_line = 0;
+            vic->raster_counter++;
+            if (vic->raster_counter >= VIC_TOTAL_LINES)
+                vic->raster_counter = 0;
+
+            // update $D012 low byte and $D011 bit7 (read-only bit stored in regs[0x11]'s bit7)
+            // Note: the hardware stores the raster counter internally; reading $D012 returns the low byte,
+            // and bit7 high part is reflected by reading D011's bit7 (we keep D011 as CPU-writable but don't override bit7 here)
+            // For simplicity we don't modify D011's bit7 on our own. We update the read-return via vic_reg_read earlier.
+
+            // Set the D012 register value for writes/reads to use (we keep regs[0x12] as the comparator low byte)
+            // Important: hardware updates internal raster counter; reading of $D012 will return (v->raster & 0xFF)
+            // and we already handle that in vic_reg_read().
+
+            // Check raster compare -> set IRQ flag if match
+            uint16_t raster_value = (uint16_t)vic->raster_counter;
+            // Note: raster_compare already computed on writes to D011/D012
+            uint16_t raster_compare = get_raster_compare(vic);
+            if (raster_value == raster_compare)
+            {
+                // set raster flag (bit0 of $D019)
+                vic->registers[0x19] |= 0x01;
+                // if enabled in IRQEN ($D01A bit0), assert IRQ
+                if (vic->registers[0x1A] & 0x01)
+                {
+                    bus_trigger_cpu_irq(bus);
+                }
+            }
+        }
+        vic_cycles--;
+    }
+}
+
+vic_t *vic_create()
+{
+    vic_t *vic = malloc(sizeof(vic_t));
+    if (!vic)
+        return NULL;
+
+    vic->cycles = 0;
+    vic->raster_counter = 0;
+    vic->cycle_in_line = 0;
+    vic->line = 0;
+    vic->subcycle = 0;
+    memset(vic->registers, 0, 0x40);
+    memset(vic->color_ram, 0, 0x800);
+    memset(vic->framebuffer, 0, VIC_FRAME_WIDTH * VIC_FRAME_HEIGHT);
+
+    return vic;
+}
+
+void vic_reset(vic_t *vic)
+{
+}
+
+void vic_destroy(vic_t *vic)
+{
+    if (vic)
+        free(vic);
+}
+
+void vic_tick(vic_t *vic, c64_bus_t *bus)
+{
+    //vic_step_vic_cycles(vic, bus, 56);
+
+    vic->cycles++;
+    if(vic->cycles % 63 == 0) vic->raster_counter++;
+    uint16_t raster_compare = vic->registers[0x11] & 0x80;
+    raster_compare = (raster_compare << 1) | vic->registers[0x12];
+    if(vic->raster_counter == raster_compare && (vic->registers[0x2a] & 0x01) ) {
+        vic->registers[0x19] = vic->registers[0x19] | 0x80;
+        bus_trigger_cpu_irq(bus);
+    }
+    if(vic->raster_counter >= 312) vic->raster_counter = 0;
+}
+
+uint8_t vic_read(vic_t *vic, uint16_t addr)
+{
+    uint8_t reg = (addr - VIC_ROM_ADDRESS) % 0x40;
+    if (reg == 0x12)
+        return (uint8_t)(vic->raster_counter & 0x00FF);
+    if (reg == 0x13 || reg == 0x14)
+        return vic->registers[reg];
+    if (reg >= 47)
+        return 0xFF;
+    return vic->registers[reg];
+}
+
+void vic_write(vic_t *vic, uint16_t addr, uint8_t value)
+{
+    uint8_t reg = (addr - VIC_ROM_ADDRESS) % 0x40;
+    if (reg == 0x19)
+    { /* IRQ trigger */
+    }
+    if (reg == 0x1A)
+    { /* IRQ enable */
+    }
+    vic->registers[reg] = value;
+}
+
+uint32_t *vic_get_framebuffer(vic_t *vic)
+{
+    return vic->framebuffer;
+}
 
 char charset[64] = {
     '@',
@@ -84,256 +377,6 @@ char charset[64] = {
     '>',
     '?'
 };
-
-// color ram $D800-$DBE7 -> color = 0-15 = x0 - xF
-// unused $DBE8-$DBFF
-
-/*
-
-https://www.cebix.net/VIC-Article.txt
-
-                               The area at $d000-$dfff with
-                                  CHAREN=1     CHAREN=0
-
- $ffff +--------------+  /$e000 +----------+  +----------+
-       |  Kernal ROM  | /       |  I/O  2  |  |          |
- $e000 +--------------+/  $df00 +----------+  |          |
-       |I/O, Char ROM |         |  I/O  1  |  |          |
- $d000 +--------------+\  $de00 +----------+  |          |
-       |     RAM      | \       |  CIA  2  |  |          |
- $c000 +--------------+  \$dd00 +----------+  |          |
-       |  Basic ROM   |         |  CIA  1  |  |          |
- $a000 +--------------+   $dc00 +----------+  | Char ROM |
-       |              |         |Color RAM |  |          |
-       .     RAM      .         |          |  |          |
-       .              .   $d800 +----------+  |          |
-       |              |         |   SID    |  |          |
- $0002 +--------------+         |registers |  |          |
-       | I/O port DR  |   $d400 +----------+  |          |
- $0001 +--------------+         |   VIC    |  |          |
-       | I/O port DDR |         |registers |  |          |
- $0000 +--------------+   $d000 +----------+  +----------+
-
-
- $ffff +----------+   --
-       |          |
-       |          |
-       |          |
-       |   RAM    | Bank 3
-       |          |
-       |          |
-       |          |
- $c000 +----------+   --
-       |          |
-       |   RAM    |
-       |          |
- $a000 +----------+ Bank 2
-       | Char ROM |
- $9000 +----------+
-       |   RAM    |
- $8000 +----------+   --
-       |          |
-       |          |
-       |          |
-       |   RAM    | Bank 1
-       |          |
-       |          |
-       |          |
- $4000 +----------+   --
-       |          |
-       |   RAM    |
-       |          |
- $2000 +----------+ Bank 0
-       | Char ROM |
- $1000 +----------+
-       |   RAM    |
- $0000 +----------+   --
-
-
-#| Adr.  |Bit7|Bit6|Bit5|Bit4|Bit3|Bit2|Bit1|Bit0| Function
---+-------+----+----+----+----+----+----+----+----+------------------------
- 0| $d000 |                  M0X                  | X coordinate sprite 0
---+-------+---------------------------------------+------------------------
- 1| $d001 |                  M0Y                  | Y coordinate sprite 0
---+-------+---------------------------------------+------------------------
- 2| $d002 |                  M1X                  | X coordinate sprite 1
---+-------+---------------------------------------+------------------------
- 3| $d003 |                  M1Y                  | Y coordinate sprite 1
---+-------+---------------------------------------+------------------------
- 4| $d004 |                  M2X                  | X coordinate sprite 2
---+-------+---------------------------------------+------------------------
- 5| $d005 |                  M2Y                  | Y coordinate sprite 2
---+-------+---------------------------------------+------------------------
- 6| $d006 |                  M3X                  | X coordinate sprite 3
---+-------+---------------------------------------+------------------------
- 7| $d007 |                  M3Y                  | Y coordinate sprite 3
---+-------+---------------------------------------+------------------------
- 8| $d008 |                  M4X                  | X coordinate sprite 4
---+-------+---------------------------------------+------------------------
- 9| $d009 |                  M4Y                  | Y coordinate sprite 4
---+-------+---------------------------------------+------------------------
-10| $d00a |                  M5X                  | X coordinate sprite 5
---+-------+---------------------------------------+------------------------
-11| $d00b |                  M5Y                  | Y coordinate sprite 5
---+-------+---------------------------------------+------------------------
-12| $d00c |                  M6X                  | X coordinate sprite 6
---+-------+---------------------------------------+------------------------
-13| $d00d |                  M6Y                  | Y coordinate sprite 6
---+-------+---------------------------------------+------------------------
-14| $d00e |                  M7X                  | X coordinate sprite 7
---+-------+---------------------------------------+------------------------
-15| $d00f |                  M7Y                  | Y coordinate sprite 7
---+-------+----+----+----+----+----+----+----+----+------------------------
-16| $d010 |M7X8|M6X8|M5X8|M4X8|M3X8|M2X8|M1X8|M0X8| MSBs of X coordinates
---+-------+----+----+----+----+----+----+----+----+------------------------
-17| $d011 |RST8| ECM| BMM| DEN|RSEL|    YSCROLL   | Control register 1
---+-------+----+----+----+----+----+--------------+------------------------
-18| $d012 |                 RASTER                | Raster counter
---+-------+---------------------------------------+------------------------
-19| $d013 |                  LPX                  | Light pen X
---+-------+---------------------------------------+------------------------
-20| $d014 |                  LPY                  | Light pen Y
---+-------+----+----+----+----+----+----+----+----+------------------------
-21| $d015 | M7E| M6E| M5E| M4E| M3E| M2E| M1E| M0E| Sprite enabled
---+-------+----+----+----+----+----+----+----+----+------------------------
-22| $d016 |  - |  - | RES| MCM|CSEL|    XSCROLL   | Control register 2
---+-------+----+----+----+----+----+----+----+----+------------------------
-23| $d017 |M7YE|M6YE|M5YE|M4YE|M3YE|M2YE|M1YE|M0YE| Sprite Y expansion
---+-------+----+----+----+----+----+----+----+----+------------------------
-24| $d018 |VM13|VM12|VM11|VM10|CB13|CB12|CB11|  - | Memory pointers
---+-------+----+----+----+----+----+----+----+----+------------------------
-25| $d019 | IRQ|  - |  - |  - | ILP|IMMC|IMBC|IRST| Interrupt register
---+-------+----+----+----+----+----+----+----+----+------------------------
-26| $d01a |  - |  - |  - |  - | ELP|EMMC|EMBC|ERST| Interrupt enabled
---+-------+----+----+----+----+----+----+----+----+------------------------
-27| $d01b |M7DP|M6DP|M5DP|M4DP|M3DP|M2DP|M1DP|M0DP| Sprite data priority
---+-------+----+----+----+----+----+----+----+----+------------------------
-28| $d01c |M7MC|M6MC|M5MC|M4MC|M3MC|M2MC|M1MC|M0MC| Sprite multicolor
---+-------+----+----+----+----+----+----+----+----+------------------------
-29| $d01d |M7XE|M6XE|M5XE|M4XE|M3XE|M2XE|M1XE|M0XE| Sprite X expansion
---+-------+----+----+----+----+----+----+----+----+------------------------
-30| $d01e | M7M| M6M| M5M| M4M| M3M| M2M| M1M| M0M| Sprite-sprite collision
---+-------+----+----+----+----+----+----+----+----+------------------------
-31| $d01f | M7D| M6D| M5D| M4D| M3D| M2D| M1D| M0D| Sprite-data collision
---+-------+----+----+----+----+----+----+----+----+------------------------
-32| $d020 |  - |  - |  - |  - |         EC        | Border color
---+-------+----+----+----+----+-------------------+------------------------
-33| $d021 |  - |  - |  - |  - |        B0C        | Background color 0
---+-------+----+----+----+----+-------------------+------------------------
-34| $d022 |  - |  - |  - |  - |        B1C        | Background color 1
---+-------+----+----+----+----+-------------------+------------------------
-35| $d023 |  - |  - |  - |  - |        B2C        | Background color 2
---+-------+----+----+----+----+-------------------+------------------------
-36| $d024 |  - |  - |  - |  - |        B3C        | Background color 3
---+-------+----+----+----+----+-------------------+------------------------
-37| $d025 |  - |  - |  - |  - |        MM0        | Sprite multicolor 0
---+-------+----+----+----+----+-------------------+------------------------
-38| $d026 |  - |  - |  - |  - |        MM1        | Sprite multicolor 1
---+-------+----+----+----+----+-------------------+------------------------
-39| $d027 |  - |  - |  - |  - |        M0C        | Color sprite 0
---+-------+----+----+----+----+-------------------+------------------------
-40| $d028 |  - |  - |  - |  - |        M1C        | Color sprite 1
---+-------+----+----+----+----+-------------------+------------------------
-41| $d029 |  - |  - |  - |  - |        M2C        | Color sprite 2
---+-------+----+----+----+----+-------------------+------------------------
-42| $d02a |  - |  - |  - |  - |        M3C        | Color sprite 3
---+-------+----+----+----+----+-------------------+------------------------
-43| $d02b |  - |  - |  - |  - |        M4C        | Color sprite 4
---+-------+----+----+----+----+-------------------+------------------------
-44| $d02c |  - |  - |  - |  - |        M5C        | Color sprite 5
---+-------+----+----+----+----+-------------------+------------------------
-45| $d02d |  - |  - |  - |  - |        M6C        | Color sprite 6
---+-------+----+----+----+----+-------------------+------------------------
-46| $d02e |  - |  - |  - |  - |        M7C        | Color sprite 7
---+-------+----+----+----+----+-------------------+------------------------
-*/
-
-// read 0400-07e7 (1024-2023) = 40 col x 25 row
-// rom chars $D000–$DFFF
-// color ram $D800–$DBFF
-// $D021 background color
-
-struct vic
-{
-    uint64_t cycles;
-    uint16_t raster_counter;
-    uint8_t line;
-    uint8_t registers[47];
-    uint8_t color_ram[0x800];
-};
-
-struct c64_framebuffer
-{
-    uint32_t data[64000];
-};
-
-vic_t *vic_create()
-{
-    vic_t *vic = malloc(sizeof(vic_t));
-    if (!vic)
-        return NULL;
-
-    vic->cycles = 0;
-    return vic;
-}
-
-void vic_reset(vic_t *vic)
-{
-}
-
-void vic_tick(vic_t *vic, c64_bus_t *bus)
-{
-    vic->cycles++;
-    if(vic->cycles % 63 == 0) vic->raster_counter++;
-    uint16_t raster_compare = vic->registers[0x11] & 0x80;
-    raster_compare = (raster_compare << 1) | vic->registers[0x12];
-    if(vic->raster_counter == raster_compare && (vic->registers[0x2a] & 0x01) ) {
-        vic->registers[0x19] = vic->registers[0x19] | 0x80;
-        bus_trigger_cpu_irq(bus);
-    }
-    if(vic->raster_counter >= 312) vic->raster_counter = 0;
-}
-
-void vic_write(vic_t *vic, uint16_t addr, uint8_t value)
-{
-    vic->registers[addr-VIC_ROM_ADDRESS] = value;
-}
-
-uint8_t vic_read(vic_t *vic, uint16_t addr)
-{
-    uint8_t reg = (addr-VIC_ROM_ADDRESS) % 64;
-    if(reg == 0x12) return (uint8_t) (vic->raster_counter & 0x00FF);
-    if(reg >= 47) return 0xFF;
-    return vic->registers[reg];
-}
-
-void vic_destroy(vic_t *vic)
-{
-    if (vic)
-        free(vic);
-}
-
-uint16_t vic_decode_screen_address(vic_t *vic, c64_bus_t *bus)
-{
-    // BASE = read IO CIA $DD02 :  (~V) << 6
-    // OFF  = read VIC ($D018 & 0xF0) << 10
-    // ADDR = BASE + OFF
-    uint16_t bank = bus_read(bus, 0xDD02);
-    uint16_t base = ~bank << 6;
-    uint16_t reg = vic->registers[0x18];
-    uint16_t offset = (reg & 0x00F0) << 10;
-
-    return base + offset;
-}
-
-uint16_t vic_decode_char_rom_address(vic_t *vic, c64_bus_t *bus)
-{
-    // bank0 = read VIC ($018 & 0x0E) << 10     
-    // bank2 = bank0 + 0x8000
-    uint16_t reg = vic->registers[0xD018 - VIC_ROM_ADDRESS];
-    
-    return (reg & 0x000E) << 10;
-}
 
 void vic_log_screen(vic_t *vic, c64_bus_t *bus)
 {

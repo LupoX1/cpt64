@@ -50,13 +50,13 @@ bool memory_load_roms(memory_t *mem)
   bool ok = true;
 
   // BASIC ROM $A000-$BFFF
-  ok &= load_file("roms/basic.bin", mem->basic, BASIC_SIZE);
+  ok &= load_file("assets/roms/basic.bin", mem->basic, BASIC_SIZE);
 
   // KERNAL ROM $E000-$FFFF
-  ok &= load_file("roms/kernal.bin", mem->kernal, KERNAL_SIZE);
+  ok &= load_file("assets/roms/kernal.bin", mem->kernal, KERNAL_SIZE);
 
   // Character ROM $D000-$DFFF
-  ok &= load_file("roms/chargen.bin", mem->chargen, CHARGEN_SIZE);
+  ok &= load_file("assets/roms/chargen.bin", mem->chargen, CHARGEN_SIZE);
 
   if (ok)
   {

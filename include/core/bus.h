@@ -24,4 +24,6 @@ void bus_log(c64_bus_t*);
 
 void bus_trigger_cpu_irq(c64_bus_t *);
 
+uint32_t *bus_get_framebuffer(c64_bus_t *);
+
 #endif // C64_BUS_H

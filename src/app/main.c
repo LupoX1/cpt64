@@ -2,6 +2,7 @@
 #include "log/log.h"
 #include <stdint.h>
 #include <raylib.h>
+#include <time.h>
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
@@ -22,13 +23,8 @@ typedef struct
     char rom_path[256];
     char program_path[256];
     char state_path[256];
+    Texture2D *tex;
 } ui_state_t;
-
-Texture2D *emu_get_screen_texture(emu_t *emu)
-{
-    (void)emu;
-    return NULL;
-}
 
 void render_toolbar(ui_state_t *ui, emu_t *emu)
 {
@@ -111,7 +107,7 @@ void render_sidebar(ui_state_t *ui, emu_t *emu)
     if (GuiButton((Rectangle){sx + 10, sy, sw - 20, 30}, "#5#Load Program (.PRG)"))
     {
         // TODO: File dialog
-        emu_load_program(emu, "program.prg");
+        emu_load_program(emu, "program.prg", 0x0801);
     }
     sy = 235;
 
@@ -180,35 +176,6 @@ void render_status(ui_state_t *ui, emu_t *emu)
 
     // Istruzione corrente
     GuiLabel((Rectangle){col1_x, info_y, 600, 20}, TextFormat("Current: %s", emu_get_current_instruction(emu)));
-}
-
-void render_screen(ui_state_t *ui, emu_t *emu)
-{
-    // ========================================
-    // SCHERMO C64 - Centro
-    // ========================================
-    int screen_x = ui->sidebar_width + 20;
-    int screen_y = ui->toolbar_height + 20;
-
-    GuiPanel((Rectangle){screen_x - 5, screen_y - 5, ui->c64_screen_width + 10, ui->c64_screen_height + 35}, "C64 Display");
-
-    // Bordo schermo
-    DrawRectangle(screen_x - 2, screen_y + 25 - 2, ui->c64_screen_width + 4, ui->c64_screen_height + 4, BLUE);
-    DrawRectangle(screen_x, screen_y + 25, ui->c64_screen_width, ui->c64_screen_height, BLACK);
-
-    // Texture dello schermo C64
-    Texture2D *c64_screen = emu_get_screen_texture(emu);
-    if (c64_screen)
-    {
-        DrawTexturePro(*c64_screen,
-                       (Rectangle){0, 0, 320, 200},
-                       (Rectangle){screen_x, screen_y + 25, ui->c64_screen_width, ui->c64_screen_height},
-                       (Vector2){0, 0}, 0.0f, WHITE);
-    }
-    else
-    {
-        DrawRectangle(screen_x, screen_y + 25, ui->c64_screen_width, ui->c64_screen_height, BLUE);
-    }
 }
 
 void render_side_panels(ui_state_t *ui, emu_t *emu)
@@ -292,18 +259,7 @@ void render_footer(ui_state_t *ui, emu_t *emu)
     // FOOTER - Info generali
     // ========================================
     const char *status_text = emu_is_running(emu) ? (emu_is_paused(emu) ? "PAUSED" : "RUNNING") : "STOPPED";
-    DrawText(TextFormat("Status: %s | FPS: %d", status_text, GetFPS()), 10, GetScreenHeight() - 25, 16, LIGHTGRAY);
-}
-
-void render_ui(ui_state_t *ui, emu_t *emu)
-{
-    BeginDrawing();
-        render_sidebar(ui, emu);
-        render_toolbar(ui, emu);
-        render_screen(ui, emu);
-        // render_side_panels(ui, emu);
-        render_footer(ui, emu);
-    EndDrawing();
+    DrawText(TextFormat("Status: %s | FPS: %d", status_text, GetFPS()), 10, GetScreenHeight() - 20, 16, LIGHTGRAY);
 }
 
 void app_main_loop(emu_t *emu)
@@ -320,6 +276,8 @@ void app_main_loop(emu_t *emu)
 
     uint64_t currentTime = GetTime() * nanos_per_second;
     uint64_t accumulator = 0;
+
+    Texture2D tex = LoadTextureFromImage(GenImageColor(320, 200, BLACK));
 
     ui_state_t ui_state =
         {
@@ -354,13 +312,37 @@ void app_main_loop(emu_t *emu)
             accumulator -= dt;
         }
 
-        render_ui(&ui_state, emu);
+        BeginDrawing();
+//        render_sidebar(&ui_state, emu);
+        render_toolbar(&ui_state, emu);
+/*
+        // ========================================
+        // SCHERMO C64 - Centro
+        // ========================================
+        int screen_x = ui_state.sidebar_width + 20;
+        int screen_y = ui_state.toolbar_height + 20;
+
+        GuiPanel((Rectangle){screen_x - 5, screen_y - 5, ui_state.c64_screen_width + 10, ui_state.c64_screen_height + 35}, "C64 Display");
+
+        // Bordo schermo
+        DrawRectangle(screen_x - 2, screen_y + 25 - 2, ui_state.c64_screen_width + 4, ui_state.c64_screen_height + 4, BLUE);
+        DrawRectangle(screen_x, screen_y + 25, ui_state.c64_screen_width, ui_state.c64_screen_height, BLACK);
+
+        // Texture dello schermo C64 emu_get_framebuffer
+        // uint32_t *framebuffer = emu_get_framebuffer(emu);
+        // UpdateTexture(tex, random32);
+        DrawTexturePro(tex,
+                       (Rectangle){0, 0, 320, 200},
+                       (Rectangle){screen_x, screen_y + 25, ui_state.c64_screen_width, ui_state.c64_screen_height},
+                       (Vector2){0, 0}, 0.0f, WHITE);
+
+        // render_side_panels(ui, emu);
+        render_footer(&ui_state, emu);*/
+        EndDrawing();
     }
 
+    UnloadTexture(tex);
     CloseWindow();
-
-    log_info("Shutting down GUI application");
-    emu_shutdown(emu);
 }
 
 int main(int argc, char *argv[])
@@ -383,7 +365,31 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    emu_reset(emu);
+
+    // Carica programma se specificato
+    if (argc > 1)
+    {
+        uint16_t addr = 0x0801; // Default BASIC start
+        if (argc > 2)
+        {
+            addr = (uint16_t)strtol(argv[2], NULL, 16);
+        }
+
+        log_info("Loading %s at $%04X\n", argv[1], addr);
+        if (!emu_load_program(emu, argv[1], addr))
+        {
+            log_error("Failed to load program\n");
+            emu_shutdown(emu);
+            return 1;
+        }
+    }
+
     app_main_loop(emu);
+
+    // Cleanup
+    log_info("Shutting down GUI application");
+    emu_shutdown(emu);
 
     return 0;
 }

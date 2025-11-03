@@ -89,14 +89,8 @@ void c64_destroy(c64_system_t *sys)
     free(sys);
 }
 
-/*
-void c64_run_cycles(c64_system_t *sys, uint64_t cycles)
+uint32_t *c64_get_framebuffer(c64_system_t* sys)
 {
-    uint64_t start = c64_get_cycles(sys);
-    uint64_t target = start + cycles;
-    
-    while (c64_get_cycles(sys) < target) {
-        if (!c64_step(sys)) break;
-    }
+    if(!sys) return NULL;
+    return bus_get_framebuffer(sys->bus);
 }
-*/
