@@ -264,21 +264,6 @@ void render_footer(ui_state_t *ui, emu_t *emu)
 
 void app_main_loop(emu_t *emu)
 {
-    InitWindow(emu->window_width, emu->window_height, emu->name);
-    SetTargetFPS(50);
-    log_info("GUI initialized successfully with raylib + raygui");
-
-    const uint64_t nanos_per_second = 1000000000;
-    const uint64_t max_frame_time = nanos_per_second / 4;
-
-    uint64_t t = 0;
-    uint64_t dt = emu->clock;
-
-    uint64_t currentTime = GetTime() * nanos_per_second;
-    uint64_t accumulator = 0;
-
-    Texture2D tex = LoadTextureFromImage(GenImageColor(320, 200, BLACK));
-
     ui_state_t ui_state =
         {
             .show_memory_viewer = false,
@@ -294,6 +279,22 @@ void app_main_loop(emu_t *emu)
             .c64_screen_width = 640,
             .c64_screen_height = 400,
             .status_height = 40};
+
+    InitWindow(emu->window_width, emu->window_height, emu->name);
+    ClearWindowState(FLAG_VSYNC_HINT);
+
+    // SetTargetFPS(50);
+    log_info("GUI initialized successfully with raylib + raygui");
+
+    Texture2D tex = LoadTextureFromImage(GenImageColor(320, 200, BLACK));
+
+    const uint64_t nanos_per_second = 1000000000;
+    const uint64_t max_frame_time = nanos_per_second / 4;
+    const uint64_t dt = nanos_per_second / emu->clock;
+    
+    uint64_t t = 0;
+    uint64_t accumulator = 0;
+    uint64_t currentTime = GetTime() * nanos_per_second;
 
     while (!WindowShouldClose())
     {
@@ -313,9 +314,9 @@ void app_main_loop(emu_t *emu)
         }
 
         BeginDrawing();
-//        render_sidebar(&ui_state, emu);
+        render_sidebar(&ui_state, emu);
         render_toolbar(&ui_state, emu);
-/*
+
         // ========================================
         // SCHERMO C64 - Centro
         // ========================================
@@ -337,7 +338,7 @@ void app_main_loop(emu_t *emu)
                        (Vector2){0, 0}, 0.0f, WHITE);
 
         // render_side_panels(ui, emu);
-        render_footer(&ui_state, emu);*/
+        render_footer(&ui_state, emu);
         EndDrawing();
     }
 
