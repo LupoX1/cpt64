@@ -285,6 +285,7 @@ bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
 
 bool cpu_step(cpu_t *cpu, c64_bus_t *bus)
 {
+    if(cpu->cycles % 10000 == 0) log_debug("Cycles %lu", cpu->cycles);
     // Gestisci interrupt in ordine di priorità
     if (cpu->int_pending & INT_RESET)
     {
