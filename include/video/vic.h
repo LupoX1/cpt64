@@ -22,4 +22,6 @@ uint32_t *vic_get_framebuffer(vic_t *vic);
 
 void vic_log_screen(vic_t *, c64_bus_t *);
 
+bool vic_badline(vic_t *vic);
+
 #endif // VIC_H

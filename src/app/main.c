@@ -1,3 +1,4 @@
+#include "c64.h"
 #include "core/emu.h"
 #include "log/log.h"
 #include <stdint.h>
@@ -6,6 +7,48 @@
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
+
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <execinfo.h>
+
+c64_system_t *g_c64;
+
+void signal_handler(int sig) {
+    const char *name = "UNKNOWN";
+    switch (sig) {
+        case SIGSEGV: name = "Segmentation Fault"; break;
+        case SIGBUS:  name = "Bus Error"; break;
+        case SIGILL:  name = "Illegal Instruction"; break;
+        case SIGABRT: name = "Abort"; break;
+        case SIGINT:  name = "Ctrl+C Interrupt"; break;
+        case SIGTERM: name = "Termination Signal"; break;
+        case SIGQUIT: name = "Quit"; break;
+    }
+
+    fprintf(stderr, "\n[!] Signal caught: %s (%d)\n", name, sig);
+    c64_dump_state(g_c64, "c64_error_dump.log");
+
+    // opzionale: stampa backtrace
+    void *trace[64];
+    int n = backtrace(trace, 64);
+    backtrace_symbols_fd(trace, n, fileno(stderr));
+
+    // termina subito
+    exit(1);
+}
+
+void install_signal_handlers(c64_system_t *c64) {
+    g_c64 = c64;
+    signal(SIGSEGV, signal_handler);
+    signal(SIGBUS,  signal_handler);
+    signal(SIGILL,  signal_handler);
+    signal(SIGABRT, signal_handler);
+    signal(SIGINT,  signal_handler);
+    signal(SIGTERM, signal_handler);
+    signal(SIGQUIT, signal_handler);
+}
 
 // Struttura per lo stato UI (da dichiarare fuori dal render)
 typedef struct
@@ -330,8 +373,8 @@ void app_main_loop(emu_t *emu)
         DrawRectangle(screen_x, screen_y + 25, ui_state.c64_screen_width, ui_state.c64_screen_height, BLACK);
 
         // Texture dello schermo C64 emu_get_framebuffer
-        // uint32_t *framebuffer = emu_get_framebuffer(emu);
-        // UpdateTexture(tex, random32);
+        uint32_t *framebuffer = emu_get_framebuffer(emu);
+        UpdateTexture(tex, framebuffer);
         DrawTexturePro(tex,
                        (Rectangle){0, 0, 320, 200},
                        (Rectangle){screen_x, screen_y + 25, ui_state.c64_screen_width, ui_state.c64_screen_height},
@@ -365,6 +408,8 @@ int main(int argc, char *argv[])
         log_error("Failed to initialize application");
         return 1;
     }
+
+    install_signal_handlers(emu->c64);
 
     emu_reset(emu);
 

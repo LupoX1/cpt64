@@ -21,6 +21,8 @@ struct cpu
     uint8_t sr;
     uint8_t sp;
     uint8_t int_pending;
+
+    uint8_t current_instruction;
 };
 
 cpu_t *cpu_create()
@@ -29,11 +31,18 @@ cpu_t *cpu_create()
     if (!cpu)
         return NULL;
 
+    cpu->a = 0;
+    cpu->x = 0;
+    cpu->y = 0;
+    cpu->pc = 0;
+    cpu->sp = 0;
+    cpu->sr = FLAG_U;
     cpu->cycles = 0;
+    cpu->current_instruction = 0;
+    cpu->int_pending = 0;
 
     // cpu->sp = 0xFD;
     //cpu->sr = FLAG_U | FLAG_I;
-    //cpu->int_pending = 0;
 
     return cpu;
 }
@@ -251,8 +260,6 @@ void handle_irq(cpu_t *cpu, c64_bus_t *bus)
     uint8_t lo = bus_read(bus, 0xFFFE);
     uint8_t hi = bus_read(bus, 0xFFFF);
     cpu->pc = (hi << 8) | lo;
-
-    cpu->cycles += 7;
 }
 
 bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
@@ -277,14 +284,27 @@ bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
     cpu->pc += get_instruction_size(opcode);
 
     // Conta cicli base
-    cpu->cycles += get_cycles_count(opcode);
-
+    cpu->current_instruction = get_cycles_count(opcode);
+    cpu->cycles ++;
+    
     // Esegui
     return handler(cpu, bus, addr);
 }
 
 bool cpu_step(cpu_t *cpu, c64_bus_t *bus)
 {
+    if(bus_badline(bus))
+    {
+        cpu->cycles ++;
+        return true;
+    }
+
+    if(cpu->current_instruction > 0) {
+        cpu->current_instruction--;
+        cpu->cycles ++;
+        return true;
+    }
+
     // Gestisci interrupt in ordine di priorità
     if (cpu->int_pending & INT_RESET)
     {

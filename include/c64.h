@@ -22,6 +22,8 @@
 #define VIC_FIRST_VISIBLE_LINE  48
 #define VIC_VISIBLE_LINES      200
 #define VIC_TOTAL_LINES        312
+#define VIC_FULL_WIDTH   403
+#define VIC_FULL_HEIGHT  312
 #define VIC_CYCLES_PER_LINE     63
 #define VIC_SUBCYCLES_PER_CPU    8
 

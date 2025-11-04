@@ -61,12 +61,10 @@ uint32_t palette[16] = {
 struct vic
 {
     uint64_t cycles;
-    uint16_t raster_counter;
-    uint8_t cycle_in_line;
-    uint8_t line;
-    uint8_t subcycle;
+    uint16_t raster;
+    uint8_t cycle;
     uint8_t registers[0x40];
-    uint8_t color_ram[0x800];
+    bool badline;
     uint32_t framebuffer[VIC_FRAME_WIDTH * VIC_FRAME_HEIGHT];
 };
 
@@ -79,104 +77,33 @@ struct c64_framebuffer
 // The typical CIA2 register for VIC bank is $DD00 bits 0-1 (but actual port may differ).
 // For safety, caller should ensure $DD00 is wired to mem_read callback.
 // We'll read mem_read(0xDD00) directly.
-uint32_t vic_get_bank_base(vic_t *vic, c64_bus_t *bus)
+uint16_t vic_get_bank_base(vic_t *vic, c64_bus_t *bus)
 {
     uint8_t cia2 = bus_read(bus, 0xDD00);
-    uint8_t bank = cia2 & 0x03;     // 0..3
-    return (uint32_t)bank * 0x4000; // 16KB banks
+    uint8_t bank = 3 - (cia2 & 0x03);     // 0..3
+    uint16_t base = (uint16_t)bank * 0x4000; // 16KB banks
+    return base;
 }
 
 // Compute screen base (offset inside selected bank) and return absolute 16-bit address
-uint32_t vic_get_screen_base(vic_t *vic, c64_bus_t *bus)
+uint16_t vic_get_screen_base(vic_t *vic, c64_bus_t *bus)
 {
     uint8_t d018 = vic->registers[0x18];
-    uint32_t bank_base = vic_get_bank_base(vic, bus);
-    uint32_t screen_offset_kb = (d018 >> 4) & 0x0F; // bits 4-7
-    return bank_base + (screen_offset_kb * 1024);
+    uint16_t bank_base = vic_get_bank_base(vic, bus);
+    uint16_t screen_offset_kb = (d018 >> 4) & 0x0F; // bits 4-7
+    uint16_t addr = bank_base + (screen_offset_kb * 1024);
+    return addr;
 }
 
 // Compute charset base (offset inside bank). According to docs bits 1..3 specify 2KB blocks.
 // Bits weights 2,4,8 — so ( (d018 & 0x0E) >> 1 ) * 2048
-uint32_t vic_get_charset_base(vic_t *vic, c64_bus_t *bus)
+uint16_t vic_get_charset_base(vic_t *vic, c64_bus_t *bus)
 {
     uint8_t d018 = vic->registers[0x18];
-    uint32_t bank_base = vic_get_bank_base(vic, bus);
-    uint32_t char_block = ((d018 & 0x0E) >> 1) & 0x07; // 0..7
-    return bank_base + (char_block * 2048);
-}
-
-/* -------------------------
-   Core: render one character cell (8 pixels) at given raster line and column
-   ------------------------- */
-void vic_render_charcell_at(vic_t *vic, c64_bus_t *bus, int raster_line, int column)
-{
-    // determine which row of characters and which subrow inside character
-    int vis_row = (raster_line - VIC_FIRST_VISIBLE_LINE) / 8;     // 0..24
-    int row_in_char = (raster_line - VIC_FIRST_VISIBLE_LINE) % 8; // 0..7
-    if (vis_row < 0 || vis_row >= 25)
-        return; // outside text area
-
-    // compute addresses
-    uint32_t screen_base = vic_get_screen_base(vic, bus);
-    uint16_t screen_addr = (uint16_t)(screen_base + (vis_row * 40) + column);
-    uint8_t char_index = bus_read(bus, screen_addr);
-
-    // color RAM: always at $D800 + offset (CPU view)
-    uint16_t color_addr = 0xD800 + (vis_row * 40) + column;
-    uint8_t color_byte = bus_read(bus, color_addr) & 0x0F;
-    uint8_t fg_color = color_byte;
-    uint8_t bg_color = vic->registers[0x21] & 0x0F; // $D021 background color
-
-    // charset fetch
-    uint32_t charset_base = vic_get_charset_base(vic, bus);
-    uint16_t glyph_addr = (uint16_t)(charset_base + (char_index * 8) + row_in_char);
-    uint8_t glyph = bus_read(bus, glyph_addr);
-
-    log_debug("screen_base %u screen_addr %u char_index %u\n", screen_base, screen_addr, char_index);
-    log_debug("color_addr %u color_byte %u\n", color_addr, color_byte);
-    log_debug("charset_base %u glyph_addr %u glyph %u\n", charset_base, glyph_addr, glyph);
-    log_debug("fg_color %u palette %u bg_color %u palette %u\n", fg_color, palette[fg_color], bg_color, palette[bg_color]);
-
-    // destination in framebuffer
-    int x0 = column * 8;
-    int y = raster_line - VIC_FIRST_VISIBLE_LINE;
-    if (y < 0 || y >= VIC_FRAME_HEIGHT)
-        return;
-
-        // expand bits: bit7 -> leftmost pixel
-    for (int bit = 7; bit >= 0; --bit)
-    {
-        uint8_t pixel = (glyph & (1 << bit)) ? fg_color : bg_color;
-        vic->framebuffer[y * VIC_FRAME_WIDTH + x0 + (7-bit)] = palette[pixel];
-    }
-}
-
-/* -------------------------
-   Render one raster line (all 40 columns) in text mode
-   ------------------------- */
-void vic_render_raster_line_textmode(vic_t *vic, c64_bus_t *bus, int raster_line)
-{
-    // Skip if DEN (display enable) is 0: draw border color instead
-    bool den = (vic->registers[0x11] & 0x10) != 0; // $D011 bit4
-    uint8_t border_color = vic->registers[0x20] & 0x0F;
-    int y = raster_line - VIC_FIRST_VISIBLE_LINE;
-    if (y < 0 || y >= VIC_FRAME_HEIGHT)
-        return;
-
-    if (!den)
-    {
-        // fill whole scanline with border color
-        for (int i = 0; i < VIC_FRAME_WIDTH; ++i){
-            vic->framebuffer[y * VIC_FRAME_WIDTH + i] = palette[border_color];
-        }
-        return;
-    }
-
-    // for text mode, render 40 columns
-    for (int col = 0; col < 40; ++col)
-    {
-        vic_render_charcell_at(vic, bus, raster_line, col);
-    }
+    uint16_t bank_base = vic_get_bank_base(vic, bus);
+    uint16_t char_block = ((d018 & 0x0E) >> 1) & 0x07; // 0..7
+    uint16_t char_base = bank_base + (char_block * 2048);
+    return char_base;
 }
 
 uint16_t get_raster_compare(vic_t *vic)
@@ -186,59 +113,6 @@ uint16_t get_raster_compare(vic_t *vic)
     return ((high & 0x0080) << 1) | low;
 }
 
-/* -------------------------
-   Advance VIC by a given number of VIC cycles (subcycles).
-   The caller can convert CPU cycles -> vic cycles: vic_cycles = cpu_cycles * VIC_SUBCYCLES_PER_CPU
-   This advances raster counters, optionally renders visible lines, and handles raster IRQs.
-   ------------------------- */
-void vic_step_vic_cycles(vic_t *vic, c64_bus_t *bus, int vic_cycles)
-{
-    while (vic_cycles > 0)
-    {
-        // advance one VIC cycle
-        vic->cycle_in_line++;
-        if (vic->cycle_in_line >= VIC_CYCLES_PER_LINE)
-        {
-            // end of line: render if visible, advance raster
-            // Render the line: we render when the line falls in visible area
-            int current_line = vic->raster_counter;
-            if (current_line >= VIC_FIRST_VISIBLE_LINE && current_line < (VIC_FIRST_VISIBLE_LINE + VIC_VISIBLE_LINES))
-            {
-                vic_render_raster_line_textmode(vic, bus, current_line);
-            }
-            vic->cycle_in_line = 0;
-            vic->raster_counter++;
-            if (vic->raster_counter >= VIC_TOTAL_LINES)
-                vic->raster_counter = 0;
-
-            // update $D012 low byte and $D011 bit7 (read-only bit stored in regs[0x11]'s bit7)
-            // Note: the hardware stores the raster counter internally; reading $D012 returns the low byte,
-            // and bit7 high part is reflected by reading D011's bit7 (we keep D011 as CPU-writable but don't override bit7 here)
-            // For simplicity we don't modify D011's bit7 on our own. We update the read-return via vic_reg_read earlier.
-
-            // Set the D012 register value for writes/reads to use (we keep regs[0x12] as the comparator low byte)
-            // Important: hardware updates internal raster counter; reading of $D012 will return (v->raster & 0xFF)
-            // and we already handle that in vic_reg_read().
-
-            // Check raster compare -> set IRQ flag if match
-            uint16_t raster_value = (uint16_t)vic->raster_counter;
-            // Note: raster_compare already computed on writes to D011/D012
-            uint16_t raster_compare = get_raster_compare(vic);
-            if (raster_value == raster_compare)
-            {
-                // set raster flag (bit0 of $D019)
-                vic->registers[0x19] |= 0x01;
-                // if enabled in IRQEN ($D01A bit0), assert IRQ
-                if (vic->registers[0x1A] & 0x01)
-                {
-                    bus_trigger_cpu_irq(bus);
-                }
-            }
-        }
-        vic_cycles--;
-    }
-}
-
 vic_t *vic_create()
 {
     vic_t *vic = malloc(sizeof(vic_t));
@@ -246,12 +120,10 @@ vic_t *vic_create()
         return NULL;
 
     vic->cycles = 0;
-    vic->raster_counter = 0;
-    vic->cycle_in_line = 0;
-    vic->line = 0;
-    vic->subcycle = 0;
+    vic->raster = 0;
+    vic->cycle = 0;
+    vic->badline = false;
     memset(vic->registers, 0, 0x40);
-    memset(vic->color_ram, 0, 0x800);
     memset(vic->framebuffer, 0, VIC_FRAME_WIDTH * VIC_FRAME_HEIGHT);
 
     return vic;
@@ -267,26 +139,170 @@ void vic_destroy(vic_t *vic)
         free(vic);
 }
 
-void vic_tick(vic_t *vic, c64_bus_t *bus)
+void vic_ticks(vic_t *vic, c64_bus_t *bus)
 {
-    //vic_step_vic_cycles(vic, bus, 56);
-
     vic->cycles++;
-    if(vic->cycles % 63 == 0) vic->raster_counter++;
+    if(vic->cycles % 63 == 0) vic->raster++;
     uint16_t raster_compare = vic->registers[0x11] & 0x80;
     raster_compare = (raster_compare << 1) | vic->registers[0x12];
-    if(vic->raster_counter == raster_compare && (vic->registers[0x2a] & 0x01) ) {
+    if(vic->raster == raster_compare && (vic->registers[0x2a] & 0x01) ) {
         vic->registers[0x19] = vic->registers[0x19] | 0x80;
         bus_trigger_cpu_irq(bus);
     }
-    if(vic->raster_counter >= 312) vic->raster_counter = 0;
+    if(vic->raster >= 312) vic->raster = 0;
+}
+
+void vic_tick(vic_t *vic, c64_bus_t *bus)
+{    
+    // ========================================
+    // CYCLE 0: Inizio linea
+    // ========================================
+    if (vic->cycle == 0) {
+        // Aggiorna registro raster $D012
+        vic->registers[0x12] = vic->raster & 0xFF;
+        
+        // Bit 8 del raster in $D011 bit 7
+        if (vic->raster & 0x100) {
+            vic->registers[0x11] |= 0x80;
+        } else {
+            vic->registers[0x11] &= ~0x80;
+        }
+        
+        // Check raster IRQ
+        uint16_t raster_irq = ((vic->registers[0x11] & 0x80) << 1) | vic->registers[0x12];
+        if (vic->raster == raster_irq) {
+            vic->registers[0x19] |= 0x81;  // Raster IRQ + IRQ flag
+            if (vic->registers[0x1A] & 0x01) {
+                bus_trigger_cpu_irq(bus);
+            }
+        }
+        
+        // Determina badline
+        uint8_t yscroll = vic->registers[0x11] & 0x07;
+        bool den = vic->registers[0x11] & 0x10;
+        vic->badline = den && 
+                       (vic->raster >= 48 && vic->raster <= 247) &&
+                       ((vic->raster & 0x07) == yscroll);
+    }
+    
+    // ========================================
+    // CYCLE 12-51: C-ACCESS (badline only)
+    // ========================================
+    if (vic->badline && vic->cycle >= 12 && vic->cycle <= 51) {
+        // Fetch video matrix e color RAM
+        // TODO: Implementare cache video_matrix[40] e color_line[40]
+    }
+    
+    // ========================================
+    // CYCLE 14-53: G-ACCESS e RENDERING
+    // ========================================
+    if (vic->cycle >= 14 && vic->cycle <= 53) {
+        int char_index = vic->cycle - 14;  // 0-39
+        
+        bool den = vic->registers[0x11] & 0x10;
+        if (den && vic->raster >= 48 && vic->raster <= 247) {
+            
+            // Calcola indirizzi
+            uint8_t mem_setup = vic->registers[0x18];
+            uint16_t screen_base = ((mem_setup >> 4) & 0x0F) * 0x0400;
+            uint16_t charset_base = ((mem_setup >> 1) & 0x07) * 0x0800;
+            
+            uint8_t char_row = (vic->raster - 48) / 8;
+            uint8_t char_line = (vic->raster - 48) & 0x07;
+            
+            // Fetch carattere e colore
+            uint16_t screen_addr = screen_base + (char_row * 40) + char_index;
+            uint8_t char_code = bus_read(bus, screen_addr);
+            
+            uint16_t color_addr = 0xD800 + (char_row * 40) + char_index;
+            uint8_t color = bus_read(bus, color_addr) & 0x0F;
+            
+            // Fetch bitmap carattere
+            uint16_t charset_addr = charset_base + (char_code * 8) + char_line;
+            uint8_t char_bitmap = bus_read(bus, charset_addr);
+            
+            // Colori
+            uint32_t fg_color = palette[color];
+            uint32_t bg_color = palette[vic->registers[0x21] & 0x0F];
+            
+            // Coordinate framebuffer
+            int screen_x = char_index * 8;
+            int screen_y = vic->raster - 48;
+            
+            if (screen_y >= 0 && screen_y < 200) {
+                // Renderizza 8 pixel
+                for (int pixel = 0; pixel < 8; pixel++) {
+                    int pixel_x = screen_x + pixel;
+                    
+                    if (pixel_x < 320) {
+                        bool pixel_on = (char_bitmap >> (7 - pixel)) & 1;
+                        uint32_t pixel_color = pixel_on ? fg_color : bg_color;
+                        
+                        vic->framebuffer[screen_y * 320 + pixel_x] = pixel_color;
+                    }
+                }
+            }
+        }
+    }
+    /*
+    // ========================================
+    // BORDER RENDERING
+    // ========================================
+    if (vic->cycle >= 14 && vic->cycle <= 53) {
+        uint32_t border_color = palette[vic->registers[0x20] & 0x0F];
+        int screen_y = vic->raster;
+        
+        // Top border (raster 0-47)
+        if (screen_y < 48) {
+            int start_x = (vic->cycle - 14) * 8;
+            for (int x = start_x; x < start_x + 8 && x < 320; x++) {
+                vic->framebuffer[screen_y * 320 + x] = border_color;
+            }
+        }
+        
+        // Bottom border (raster 248-299)
+        if (screen_y >= 248 && screen_y < 300) {
+            int start_x = (vic->cycle - 14) * 8;
+            for (int x = start_x; x < start_x + 8 && x < 320; x++) {
+                vic->framebuffer[screen_y * 320 + x] = border_color;
+            }
+        }
+        
+        // Left border
+        if (screen_y >= 48 && screen_y < 248 && vic->cycle == 14) {
+            for (int x = 0; x < 24; x++) {
+                vic->framebuffer[screen_y * 320 + x] = border_color;
+            }
+        }
+        
+        // Right border
+        if (screen_y >= 48 && screen_y < 248 && vic->cycle == 53) {
+            for (int x = 296; x < 320; x++) {
+                vic->framebuffer[screen_y * 320 + x] = border_color;
+            }
+        }
+    }
+    */
+    // ========================================
+    // AVANZAMENTO
+    // ========================================
+    vic->cycle++;
+    
+    if (vic->cycle >= 63) {
+        vic->cycle = 0;
+        vic->raster++;
+        
+        if (vic->raster >= 312) {
+            vic->raster = 0;
+        }
+    }
 }
 
 uint8_t vic_read(vic_t *vic, uint16_t addr)
 {
     uint8_t reg = (addr - VIC_ROM_ADDRESS) % 0x40;
     if (reg == 0x12)
-        return (uint8_t)(vic->raster_counter & 0x00FF);
+        return (uint8_t)(vic->raster & 0x00FF);
     if (reg == 0x13 || reg == 0x14)
         return vic->registers[reg];
     if (reg >= 47)
@@ -397,4 +413,9 @@ void vic_log_screen(vic_t *vic, c64_bus_t *bus)
         }
         
     }
+}
+
+bool vic_badline(vic_t *vic)
+{
+    return vic->badline;
 }

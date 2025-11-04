@@ -80,6 +80,11 @@ bool bus_clock(c64_bus_t *bus)
     return cpu_step(bus->cpu, bus);
 }
 
+bool bus_badline(c64_bus_t *bus)
+{
+    return vic_badline(bus->vic);
+}
+
 cpu_t *bus_get_cpu(c64_bus_t *bus)
 {
     if (!bus)
