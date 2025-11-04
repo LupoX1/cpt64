@@ -199,3 +199,8 @@ uint32_t *emu_get_framebuffer(emu_t *emu)
 {
     return c64_get_framebuffer(emu->c64);
 }
+
+uint8_t emu_read_vic(emu_t *emu, uint8_t reg)
+{
+    return c64_read_vic(emu->c64, reg);
+}

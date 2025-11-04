@@ -36,6 +36,7 @@ void emu_save_state(emu_t *emu, const char *path);
 void emu_load_state(emu_t *emu, const char *path);
 void emu_reset(emu_t *emu);
 
+uint8_t emu_read_vic(emu_t *emu, uint8_t reg);
 // Informazioni stato
 uint16_t emu_get_pc(emu_t *emu);
 uint8_t emu_get_a(emu_t *emu);

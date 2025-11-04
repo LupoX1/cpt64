@@ -94,3 +94,8 @@ uint32_t *c64_get_framebuffer(c64_system_t* sys)
     if(!sys) return NULL;
     return bus_get_framebuffer(sys->bus);
 }
+
+uint8_t c64_read_vic(c64_system_t* sys, uint8_t reg)
+{
+   return bus_read_vic_internal(sys->bus, reg);
+}

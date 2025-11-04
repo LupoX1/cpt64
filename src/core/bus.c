@@ -185,3 +185,8 @@ uint32_t *bus_get_framebuffer(c64_bus_t *bus)
 {
     return vic_get_framebuffer(bus->vic);
 }
+
+uint8_t bus_read_vic_internal(c64_bus_t *bus, uint8_t reg)
+{
+    return vic_read_internal(bus->vic, reg);
+}

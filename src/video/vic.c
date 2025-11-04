@@ -389,6 +389,11 @@ uint8_t vic_read(vic_t *vic, uint16_t addr)
     return vic->registers[reg];
 }
 
+uint8_t vic_read_internal(vic_t *vic, uint8_t reg)
+{
+    return vic->registers[reg];
+}
+
 void vic_write(vic_t *vic, uint16_t addr, uint8_t value)
 {
     uint8_t reg = (addr - VIC_ROM_ADDRESS) % 0x40;

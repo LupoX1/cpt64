@@ -22,4 +22,6 @@ void c64_destroy(c64_system_t*);
 
 uint32_t *c64_get_framebuffer(c64_system_t* sys);
 
+uint8_t c64_read_vic(c64_system_t* sys, uint8_t reg);
+
 #endif // C64_SYSTEM_H

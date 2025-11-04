@@ -307,142 +307,158 @@ void render_old(ui_state_t ui_state, emu_t *emu, Texture2D *tex)
     EndDrawing();
 }
 
-    // layout_cpt64: controls initialization
-    //----------------------------------------------------------------------------------
-    Vector2 anchor01 = { 168, 680 };
-    Vector2 anchor02 = { 168, 8 };
-    Vector2 anchor03 = { 8, 8 };
-    Vector2 anchor04 = { 8, 200 };
-    Vector2 anchor05 = { 1008, 16 };
-    Vector2 anchor06 = { 168, 72 };
-    
-    bool txt_pcEditMode = false;
-    char txt_pcText[128] = "";
-    bool txt_spEditMode = false;
-    char txt_spText[128] = "";
-    bool txt_srEditMode = false;
-    char txt_srText[128] = "";
-    bool txt_flagsEditMode = false;
-    char txt_flagsText[128] = "";
-    bool txt_cycleEditMode = false;
-    char txt_cycleText[128] = "";
-    bool txt_aregEditMode = false;
-    char txt_aregText[128] = "";
-    bool txt_xregEditMode = false;
-    char txt_xregText[128] = "";
-    bool txt_yregEditMode = false;
-    char txt_yregText[128] = "";
-    bool txt_interruptEditMode = false;
-    char txt_interruptText[128] = "";
-    bool txt_port0EditMode = false;
-    char txt_port0Text[128] = "";
-    bool txt_port1EditMode = false;
-    char txt_port1Text[128] = "";
-    bool btn_startPressed = false;
-    bool btn_stopPressed = false;
-    bool btn_pausePressed = false;
-    bool btn_stepPressed = false;
-    bool Button031Pressed = false;
-    bool Button032Pressed = false;
-    bool Button036Pressed = false;
-    bool Button037Pressed = false;
-    bool Button038Pressed = false;
-    bool Button039Pressed = false;
-    bool txt_vic_00EditMode = false;
-    char txt_vic_00Text[128] = "";
-    bool txt_vic_01EditMode = false;
-    char txt_vic_01Text[128] = "";
-    bool txt_vic_18EditMode = false;
-    char txt_vic_18Text[128] = "";
-    bool txt_addrEditMode = false;
-    char txt_addrText[128] = "";
-    bool btn_prevPressed = false;
-    bool btn_nextPressed = false;
-    bool txt_vic_16EditMode = false;
-    char txt_vic_16Text[128] = "";
-    bool txt_vic_19EditMode = false;
-    char txt_vic_19Text[128] = "";
-    bool TextBox141EditMode = false;
-    char TextBox141Text[128] = "";
-    bool txt_vic_2eEditMode = false;
-    char txt_vic_2eText[128] = "";
+bool vic_reg_edit = false;
+// layout_cpt64: controls initialization
+//----------------------------------------------------------------------------------
+Vector2 anchor01 = {168, 680};
+Vector2 anchor02 = {168, 8};
+Vector2 anchor03 = {8, 8};
+Vector2 anchor04 = {8, 200};
+Vector2 anchor05 = {1008, 16};
+Vector2 anchor06 = {168, 72};
+
+bool txt_pcEditMode = false;
+char txt_pcText[128] = "";
+bool txt_spEditMode = false;
+char txt_spText[128] = "";
+bool txt_srEditMode = false;
+char txt_srText[128] = "";
+bool txt_flagsEditMode = false;
+char txt_flagsText[128] = "";
+bool txt_cycleEditMode = false;
+char txt_cycleText[128] = "";
+bool txt_aregEditMode = false;
+char txt_aregText[128] = "";
+bool txt_xregEditMode = false;
+char txt_xregText[128] = "";
+bool txt_yregEditMode = false;
+char txt_yregText[128] = "";
+bool txt_interruptEditMode = false;
+char txt_interruptText[128] = "";
+bool txt_port0EditMode = false;
+char txt_port0Text[128] = "";
+bool txt_port1EditMode = false;
+char txt_port1Text[128] = "";
+bool btn_startPressed = false;
+bool btn_stopPressed = false;
+bool btn_pausePressed = false;
+bool btn_stepPressed = false;
+bool Button031Pressed = false;
+bool Button032Pressed = false;
+bool Button036Pressed = false;
+bool Button037Pressed = false;
+bool Button038Pressed = false;
+bool Button039Pressed = false;
+bool txt_vic_00EditMode = false;
+char txt_vic_00Text[128] = "";
+
+char txt_vic_01Text[128] = "";
+bool txt_vic_18EditMode = false;
+char txt_vic_18Text[128] = "";
+bool txt_addrEditMode = false;
+char txt_addrText[128] = "";
+bool btn_prevPressed = false;
+bool btn_nextPressed = false;
+bool txt_vic_16EditMode = false;
+char txt_vic_16Text[128] = "";
+bool txt_vic_19EditMode = false;
+char txt_vic_19Text[128] = "";
+bool TextBox141EditMode = false;
+char TextBox141Text[128] = "";
+bool txt_vic_2eEditMode = false;
+char txt_vic_2eText[128] = "";
 
 void render(emu_t *emu, Texture2D *tex)
 {
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
+    // Draw
+    //----------------------------------------------------------------------------------
+    BeginDrawing();
 
-            ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR))); 
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-            // raygui: controls drawing
-            //----------------------------------------------------------------------------------
-            GuiGroupBox((Rectangle){ anchor01.x + 0, anchor01.y + 0, 352, 112 }, "Cpu Status");
-            GuiLabel((Rectangle){ anchor01.x + 8, anchor01.y + 8, 48, 24 }, "PC");
-            GuiLabel((Rectangle){ anchor01.x + 56, anchor01.y + 8, 48, 24 }, "SP");
-            GuiLabel((Rectangle){ anchor01.x + 104, anchor01.y + 8, 48, 24 }, "SR");
-            GuiLabel((Rectangle){ anchor01.x + 152, anchor01.y + 8, 96, 24 }, "Flags");
-            GuiLabel((Rectangle){ anchor01.x + 248, anchor01.y + 8, 96, 24 }, "Cycle");
-            if (GuiTextBox((Rectangle){ anchor01.x + 8, anchor01.y + 32, 48, 24 }, txt_pcText, 128, txt_pcEditMode)) txt_pcEditMode = !txt_pcEditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 56, anchor01.y + 32, 48, 24 }, txt_spText, 128, txt_spEditMode)) txt_spEditMode = !txt_spEditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 104, anchor01.y + 32, 48, 24 }, txt_srText, 128, txt_srEditMode)) txt_srEditMode = !txt_srEditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 152, anchor01.y + 32, 96, 24 }, txt_flagsText, 128, txt_flagsEditMode)) txt_flagsEditMode = !txt_flagsEditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 248, anchor01.y + 32, 96, 24 }, txt_cycleText, 128, txt_cycleEditMode)) txt_cycleEditMode = !txt_cycleEditMode;
-            GuiLabel((Rectangle){ anchor01.x + 8, anchor01.y + 56, 48, 24 }, "A");
-            GuiLabel((Rectangle){ anchor01.x + 56, anchor01.y + 56, 48, 24 }, "X");
-            GuiLabel((Rectangle){ anchor01.x + 104, anchor01.y + 56, 48, 24 }, "Y");
-            if (GuiTextBox((Rectangle){ anchor01.x + 8, anchor01.y + 80, 48, 24 }, txt_aregText, 128, txt_aregEditMode)) txt_aregEditMode = !txt_aregEditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 56, anchor01.y + 80, 48, 24 }, txt_xregText, 128, txt_xregEditMode)) txt_xregEditMode = !txt_xregEditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 104, anchor01.y + 80, 48, 24 }, txt_yregText, 128, txt_yregEditMode)) txt_yregEditMode = !txt_yregEditMode;
-            GuiLabel((Rectangle){ anchor01.x + 152, anchor01.y + 56, 96, 24 }, "Interrupt");
-            if (GuiTextBox((Rectangle){ anchor01.x + 152, anchor01.y + 80, 96, 24 }, txt_interruptText, 128, txt_interruptEditMode)) txt_interruptEditMode = !txt_interruptEditMode;
-            GuiLabel((Rectangle){ anchor01.x + 248, anchor01.y + 56, 48, 24 }, "0000");
-            GuiLabel((Rectangle){ anchor01.x + 296, anchor01.y + 56, 48, 24 }, "0001");
-            if (GuiTextBox((Rectangle){ anchor01.x + 248, anchor01.y + 80, 48, 24 }, txt_port0Text, 128, txt_port0EditMode)) txt_port0EditMode = !txt_port0EditMode;
-            if (GuiTextBox((Rectangle){ anchor01.x + 296, anchor01.y + 80, 48, 24 }, txt_port1Text, 128, txt_port1EditMode)) txt_port1EditMode = !txt_port1EditMode;
-            GuiGroupBox((Rectangle){ anchor02.x + 0, anchor02.y + 8, 232, 40 }, "Controls");
-            btn_startPressed = GuiButton((Rectangle){ anchor02.x + 8, anchor02.y + 16, 48, 24 }, "Start"); 
-            btn_stopPressed = GuiButton((Rectangle){ anchor02.x + 64, anchor02.y + 16, 48, 24 }, "Stop"); 
-            btn_pausePressed = GuiButton((Rectangle){ anchor02.x + 120, anchor02.y + 16, 48, 24 }, "Pause"); 
-            btn_stepPressed = GuiButton((Rectangle){ anchor02.x + 176, anchor02.y + 16, 48, 24 }, "Step"); 
-            GuiStatusBar((Rectangle){ 8, 800, 1280, 24 }, "Status");
-            GuiGroupBox((Rectangle){ anchor03.x + 0, anchor03.y + 8, 152, 168 }, "Files");
-            Button031Pressed = GuiButton((Rectangle){ anchor03.x + 8, anchor03.y + 144, 64, 24 }, "Save State"); 
-            Button032Pressed = GuiButton((Rectangle){ anchor03.x + 80, anchor03.y + 144, 64, 24 }, "Load State"); 
-            GuiLabel((Rectangle){ anchor03.x + 8, anchor03.y + 16, 64, 24 }, "Basic ROM");
-            GuiLabel((Rectangle){ anchor03.x + 8, anchor03.y + 48, 64, 24 }, "Kernal ROM");
-            GuiLabel((Rectangle){ anchor03.x + 8, anchor03.y + 80, 64, 24 }, "Chars ROM");
-            Button036Pressed = GuiButton((Rectangle){ anchor03.x + 80, anchor03.y + 16, 64, 24 }, "Load"); 
-            Button037Pressed = GuiButton((Rectangle){ anchor03.x + 80, anchor03.y + 48, 64, 24 }, "Load"); 
-            Button038Pressed = GuiButton((Rectangle){ anchor03.x + 80, anchor03.y + 80, 64, 24 }, "Load"); 
-            Button039Pressed = GuiButton((Rectangle){ anchor03.x + 8, anchor03.y + 112, 136, 24 }, "Load Program .prg"); 
-            GuiGroupBox((Rectangle){ anchor04.x + 0, anchor04.y + 0, 152, 592 }, "Vic Registers");
-            GuiLabel((Rectangle){ anchor04.x + 8, anchor04.y + 8, 32, 24 }, "00");
-            GuiLabel((Rectangle){ anchor04.x + 8, anchor04.y + 32, 32, 24 }, "01");
-            if (GuiTextBox((Rectangle){ anchor04.x + 40, anchor04.y + 8, 32, 24 }, txt_vic_00Text, 128, txt_vic_00EditMode)) txt_vic_00EditMode = !txt_vic_00EditMode;
-            if (GuiTextBox((Rectangle){ anchor04.x + 40, anchor04.y + 32, 32, 24 }, txt_vic_01Text, 128, txt_vic_01EditMode)) txt_vic_01EditMode = !txt_vic_01EditMode;
-            GuiLabel((Rectangle){ anchor04.x + 80, anchor04.y + 8, 32, 24 }, "18");
-            if (GuiTextBox((Rectangle){ anchor04.x + 112, anchor04.y + 8, 32, 24 }, txt_vic_18Text, 128, txt_vic_18EditMode)) txt_vic_18EditMode = !txt_vic_18EditMode;
-            GuiGroupBox((Rectangle){ anchor05.x + 0, anchor05.y + 0, 280, 776 }, "Memory");
-            GuiLabel((Rectangle){ anchor05.x + 8, anchor05.y + 8, 48, 24 }, "Address");
-            if (GuiTextBox((Rectangle){ anchor05.x + 56, anchor05.y + 8, 48, 24 }, txt_addrText, 128, txt_addrEditMode)) txt_addrEditMode = !txt_addrEditMode;
-            btn_prevPressed = GuiButton((Rectangle){ anchor05.x + 112, anchor05.y + 8, 48, 24 }, "Prev"); 
-            btn_nextPressed = GuiButton((Rectangle){ anchor05.x + 168, anchor05.y + 8, 48, 24 }, "Next"); 
-            GuiPanel((Rectangle){ anchor05.x + 8, anchor05.y + 40, 264, 728 }, NULL);
-            GuiGroupBox((Rectangle){ anchor06.x + 0, anchor06.y + 0, 832, 592 }, "Screen");
-            GuiPanel((Rectangle){ anchor06.x + 96, anchor06.y + 96, 640, 400 }, NULL);
-            GuiLabel((Rectangle){ anchor04.x + 80, anchor04.y + 536, 32, 24 }, "2E");
-            GuiLabel((Rectangle){ anchor04.x + 8, anchor04.y + 536, 32, 24 }, "16");
-            if (GuiTextBox((Rectangle){ anchor04.x + 40, anchor04.y + 536, 32, 24 }, txt_vic_16Text, 128, txt_vic_16EditMode)) txt_vic_16EditMode = !txt_vic_16EditMode;
-            if (GuiTextBox((Rectangle){ anchor04.x + 112, anchor04.y + 32, 32, 24 }, txt_vic_19Text, 128, txt_vic_19EditMode)) txt_vic_19EditMode = !txt_vic_19EditMode;
-            GuiLabel((Rectangle){ anchor04.x + 8, anchor04.y + 560, 32, 24 }, "17");
-            if (GuiTextBox((Rectangle){ anchor04.x + 40, anchor04.y + 560, 32, 24 }, TextBox141Text, 128, TextBox141EditMode)) TextBox141EditMode = !TextBox141EditMode;
-            if (GuiTextBox((Rectangle){ anchor04.x + 112, anchor04.y + 536, 32, 24 }, txt_vic_2eText, 128, txt_vic_2eEditMode)) txt_vic_2eEditMode = !txt_vic_2eEditMode;
-            GuiLabel((Rectangle){ anchor04.x + 80, anchor04.y + 32, 32, 24 }, "19");
-            //----------------------------------------------------------------------------------
+    // raygui: controls drawing
+    //----------------------------------------------------------------------------------
+    GuiGroupBox((Rectangle){anchor01.x + 0, anchor01.y + 0, 352, 112}, "Cpu Status");
+    GuiLabel((Rectangle){anchor01.x + 8, anchor01.y + 8, 48, 24}, "PC");
+    GuiLabel((Rectangle){anchor01.x + 56, anchor01.y + 8, 48, 24}, "SP");
+    GuiLabel((Rectangle){anchor01.x + 104, anchor01.y + 8, 48, 24}, "SR");
+    GuiLabel((Rectangle){anchor01.x + 152, anchor01.y + 8, 96, 24}, "Flags");
+    GuiLabel((Rectangle){anchor01.x + 248, anchor01.y + 8, 96, 24}, "Cycle");
+    if (GuiTextBox((Rectangle){anchor01.x + 8, anchor01.y + 32, 48, 24}, txt_pcText, 128, txt_pcEditMode))
+        txt_pcEditMode = !txt_pcEditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 56, anchor01.y + 32, 48, 24}, txt_spText, 128, txt_spEditMode))
+        txt_spEditMode = !txt_spEditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 104, anchor01.y + 32, 48, 24}, txt_srText, 128, txt_srEditMode))
+        txt_srEditMode = !txt_srEditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 152, anchor01.y + 32, 96, 24}, txt_flagsText, 128, txt_flagsEditMode))
+        txt_flagsEditMode = !txt_flagsEditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 248, anchor01.y + 32, 96, 24}, txt_cycleText, 128, txt_cycleEditMode))
+        txt_cycleEditMode = !txt_cycleEditMode;
+    GuiLabel((Rectangle){anchor01.x + 8, anchor01.y + 56, 48, 24}, "A");
+    GuiLabel((Rectangle){anchor01.x + 56, anchor01.y + 56, 48, 24}, "X");
+    GuiLabel((Rectangle){anchor01.x + 104, anchor01.y + 56, 48, 24}, "Y");
+    if (GuiTextBox((Rectangle){anchor01.x + 8, anchor01.y + 80, 48, 24}, txt_aregText, 128, txt_aregEditMode))
+        txt_aregEditMode = !txt_aregEditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 56, anchor01.y + 80, 48, 24}, txt_xregText, 128, txt_xregEditMode))
+        txt_xregEditMode = !txt_xregEditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 104, anchor01.y + 80, 48, 24}, txt_yregText, 128, txt_yregEditMode))
+        txt_yregEditMode = !txt_yregEditMode;
+    GuiLabel((Rectangle){anchor01.x + 152, anchor01.y + 56, 96, 24}, "Interrupt");
+    if (GuiTextBox((Rectangle){anchor01.x + 152, anchor01.y + 80, 96, 24}, txt_interruptText, 128, txt_interruptEditMode))
+        txt_interruptEditMode = !txt_interruptEditMode;
+    GuiLabel((Rectangle){anchor01.x + 248, anchor01.y + 56, 48, 24}, "0000");
+    GuiLabel((Rectangle){anchor01.x + 296, anchor01.y + 56, 48, 24}, "0001");
+    if (GuiTextBox((Rectangle){anchor01.x + 248, anchor01.y + 80, 48, 24}, txt_port0Text, 128, txt_port0EditMode))
+        txt_port0EditMode = !txt_port0EditMode;
+    if (GuiTextBox((Rectangle){anchor01.x + 296, anchor01.y + 80, 48, 24}, txt_port1Text, 128, txt_port1EditMode))
+        txt_port1EditMode = !txt_port1EditMode;
+    GuiGroupBox((Rectangle){anchor02.x + 0, anchor02.y + 8, 232, 40}, "Controls");
+    btn_startPressed = GuiButton((Rectangle){anchor02.x + 8, anchor02.y + 16, 48, 24}, "Start");
+    btn_stopPressed = GuiButton((Rectangle){anchor02.x + 64, anchor02.y + 16, 48, 24}, "Stop");
+    btn_pausePressed = GuiButton((Rectangle){anchor02.x + 120, anchor02.y + 16, 48, 24}, "Pause");
+    btn_stepPressed = GuiButton((Rectangle){anchor02.x + 176, anchor02.y + 16, 48, 24}, "Step");
+    GuiStatusBar((Rectangle){8, 800, 1280, 24}, "Status");
+    GuiGroupBox((Rectangle){anchor03.x + 0, anchor03.y + 8, 152, 168}, "Files");
+    Button031Pressed = GuiButton((Rectangle){anchor03.x + 8, anchor03.y + 144, 64, 24}, "Save State");
+    Button032Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 144, 64, 24}, "Load State");
+    GuiLabel((Rectangle){anchor03.x + 8, anchor03.y + 16, 64, 24}, "Basic ROM");
+    GuiLabel((Rectangle){anchor03.x + 8, anchor03.y + 48, 64, 24}, "Kernal ROM");
+    GuiLabel((Rectangle){anchor03.x + 8, anchor03.y + 80, 64, 24}, "Chars ROM");
+    Button036Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 16, 64, 24}, "Load");
+    Button037Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 48, 64, 24}, "Load");
+    Button038Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 80, 64, 24}, "Load");
+    Button039Pressed = GuiButton((Rectangle){anchor03.x + 8, anchor03.y + 112, 136, 24}, "Load Program .prg");
+    GuiGroupBox((Rectangle){anchor04.x + 0, anchor04.y + 0, 152, 592}, "Vic Registers");
+    char buf[16];
+    for (int16_t i = 0; i < 24; i++)
+    {
+        sprintf(buf, "%02X", i);
+        GuiLabel((Rectangle){anchor04.x + 8,  anchor04.y + 8 + (24 * i), 32, 24}, buf);
+        sprintf(buf, "%02X", emu_read_vic(emu, i));
+        if (GuiTextBox((Rectangle){anchor04.x + 40, anchor04.y + 8 + (24 * i), 32, 24}, buf, 128, vic_reg_edit))
+            vic_reg_edit = !vic_reg_edit;
+    }
+    for (int16_t i = 0; i < 23; i++)
+    {
+        sprintf(buf, "%02X", 24 + i);
+        GuiLabel((Rectangle){anchor04.x + 80, anchor04.y + 8 + (24 * i), 32, 24}, buf);
+        sprintf(buf, "%02X", emu_read_vic(emu, i));
+        if (GuiTextBox((Rectangle){anchor04.x + 112, anchor04.y + 8 + (24 * i), 32, 24}, buf, 128, vic_reg_edit))
+            vic_reg_edit = !vic_reg_edit;
+    }
+    GuiGroupBox((Rectangle){anchor05.x + 0, anchor05.y + 0, 280, 776}, "Memory");
+    GuiLabel((Rectangle){anchor05.x + 8, anchor05.y + 8, 48, 24}, "Address");
+    if (GuiTextBox((Rectangle){anchor05.x + 56, anchor05.y + 8, 48, 24}, txt_addrText, 128, txt_addrEditMode))
+        txt_addrEditMode = !txt_addrEditMode;
+    btn_prevPressed = GuiButton((Rectangle){anchor05.x + 112, anchor05.y + 8, 48, 24}, "Prev");
+    btn_nextPressed = GuiButton((Rectangle){anchor05.x + 168, anchor05.y + 8, 48, 24}, "Next");
+    GuiPanel((Rectangle){anchor05.x + 8, anchor05.y + 40, 264, 728}, NULL);
+    GuiGroupBox((Rectangle){anchor06.x + 0, anchor06.y + 0, 832, 592}, "Screen");
+    GuiPanel((Rectangle){anchor06.x + 96, anchor06.y + 96, 640, 400}, NULL);
+    //----------------------------------------------------------------------------------
 
-        EndDrawing();
-        //----------------------------------------------------------------------------------
+    EndDrawing();
+    //----------------------------------------------------------------------------------
 }
 
 //------------------------------------------------------------------------------------
