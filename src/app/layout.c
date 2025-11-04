@@ -251,15 +251,6 @@ void render_side_panels(ui_state_t *ui, emu_t *emu)
     }
 }
 
-void render_footer(ui_state_t *ui, emu_t *emu)
-{
-    // ========================================
-    // FOOTER - Info generali
-    // ========================================
-    const char *status_text = emu_is_running(emu) ? (emu_is_paused(emu) ? "PAUSED" : "RUNNING") : "STOPPED";
-    DrawText(TextFormat("Status: %s | FPS: %d", status_text, GetFPS()), 10, GetScreenHeight() - 20, 16, LIGHTGRAY);
-}
-
 ui_state_t ui_state =
     {
         .show_memory_viewer = false,
@@ -302,14 +293,10 @@ void render_old(ui_state_t ui_state, emu_t *emu, Texture2D *tex)
                    (Rectangle){screen_x, screen_y + 25, ui_state.c64_screen_width, ui_state.c64_screen_height},
                    (Vector2){0, 0}, 0.0f, WHITE);
     render_status(&ui_state, emu);
-    // render_side_panels(ui, emu);
-    render_footer(&ui_state, emu);
+
     EndDrawing();
 }
 
-bool vic_reg_edit = false;
-// layout_cpt64: controls initialization
-//----------------------------------------------------------------------------------
 Vector2 anchor01 = {168, 680};
 Vector2 anchor02 = {168, 8};
 Vector2 anchor03 = {8, 8};
@@ -339,45 +326,37 @@ bool txt_port0EditMode = false;
 char txt_port0Text[128] = "";
 bool txt_port1EditMode = false;
 char txt_port1Text[128] = "";
-bool btn_startPressed = false;
-bool btn_stopPressed = false;
-bool btn_pausePressed = false;
-bool btn_stepPressed = false;
-bool Button031Pressed = false;
-bool Button032Pressed = false;
-bool Button036Pressed = false;
-bool Button037Pressed = false;
-bool Button038Pressed = false;
-bool Button039Pressed = false;
-bool txt_vic_00EditMode = false;
-char txt_vic_00Text[128] = "";
 
-char txt_vic_01Text[128] = "";
-bool txt_vic_18EditMode = false;
-char txt_vic_18Text[128] = "";
 bool txt_addrEditMode = false;
 char txt_addrText[128] = "";
-bool btn_prevPressed = false;
-bool btn_nextPressed = false;
-bool txt_vic_16EditMode = false;
-char txt_vic_16Text[128] = "";
-bool txt_vic_19EditMode = false;
-char txt_vic_19Text[128] = "";
-bool TextBox141EditMode = false;
-char TextBox141Text[128] = "";
-bool txt_vic_2eEditMode = false;
-char txt_vic_2eText[128] = "";
 
-void render(emu_t *emu, Texture2D *tex)
+bool vic_reg_edit[47];
+
+void render_vic_registers(emu_t *emu)
 {
-    // Draw
-    //----------------------------------------------------------------------------------
-    BeginDrawing();
+    GuiGroupBox((Rectangle){anchor04.x + 0, anchor04.y + 0, 152, 592}, "Vic Registers");
 
-    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+    uint8_t reg = 23;
+    GuiLabel((Rectangle){anchor04.x + 8, anchor04.y + 8 + (24 * reg), 32, 24}, TextFormat("%02X", reg));
+    if (GuiTextBox((Rectangle){anchor04.x + 40, anchor04.y + 8 + (24 * reg), 32, 24}, TextFormat("%02X", emu_read_vic(emu, reg)), 128, vic_reg_edit[reg]))
+        vic_reg_edit[reg] = !vic_reg_edit[reg];
 
-    // raygui: controls drawing
-    //----------------------------------------------------------------------------------
+    for (int16_t i = 0; i < 23; i++)
+    {
+        reg = i;
+        GuiLabel((Rectangle){anchor04.x + 8, anchor04.y + 8 + (24 * i), 32, 24}, TextFormat("%02X", reg));
+        if (GuiTextBox((Rectangle){anchor04.x + 40, anchor04.y + 8 + (24 * i), 32, 24}, TextFormat("%02X", emu_read_vic(emu, reg)), 128, vic_reg_edit[reg]), 128, vic_reg_edit[reg])
+            vic_reg_edit[reg] = !vic_reg_edit[reg];
+
+        reg = 24 + i;
+        GuiLabel((Rectangle){anchor04.x + 80, anchor04.y + 8 + (24 * i), 32, 24}, TextFormat("%02X", reg));
+        if (GuiTextBox((Rectangle){anchor04.x + 112, anchor04.y + 8 + (24 * i), 32, 24}, TextFormat("%02X", emu_read_vic(emu, reg)), 128, vic_reg_edit[reg]), 128, vic_reg_edit[reg])
+            vic_reg_edit[reg] = !vic_reg_edit[reg];
+    }
+}
+
+void render_cpu_registers()
+{
     GuiGroupBox((Rectangle){anchor01.x + 0, anchor01.y + 0, 352, 112}, "Cpu Status");
     GuiLabel((Rectangle){anchor01.x + 8, anchor01.y + 8, 48, 24}, "PC");
     GuiLabel((Rectangle){anchor01.x + 56, anchor01.y + 8, 48, 24}, "SP");
@@ -412,55 +391,80 @@ void render(emu_t *emu, Texture2D *tex)
         txt_port0EditMode = !txt_port0EditMode;
     if (GuiTextBox((Rectangle){anchor01.x + 296, anchor01.y + 80, 48, 24}, txt_port1Text, 128, txt_port1EditMode))
         txt_port1EditMode = !txt_port1EditMode;
+}
+
+void render_controls(emu_t *emu)
+{
+    bool is_running = emu_is_running(emu);
+    bool is_paused = emu_is_paused(emu);
+
     GuiGroupBox((Rectangle){anchor02.x + 0, anchor02.y + 8, 232, 40}, "Controls");
-    btn_startPressed = GuiButton((Rectangle){anchor02.x + 8, anchor02.y + 16, 48, 24}, "Start");
-    btn_stopPressed = GuiButton((Rectangle){anchor02.x + 64, anchor02.y + 16, 48, 24}, "Stop");
-    btn_pausePressed = GuiButton((Rectangle){anchor02.x + 120, anchor02.y + 16, 48, 24}, "Pause");
-    btn_stepPressed = GuiButton((Rectangle){anchor02.x + 176, anchor02.y + 16, 48, 24}, "Step");
-    GuiStatusBar((Rectangle){8, 800, 1280, 24}, "Status");
+    GuiSetState(!is_running ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){anchor02.x + 8, anchor02.y + 16, 48, 24}, GuiIconText(ICON_PLAYER_PLAY, NULL)))
+        emu_start(emu);
+    GuiSetState(is_running ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){anchor02.x + 64, anchor02.y + 16, 48, 24}, GuiIconText(ICON_PLAYER_STOP, NULL)))
+        emu_stop(emu);
+    GuiSetState(is_running ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){anchor02.x + 120, anchor02.y + 16, 48, 24}, GuiIconText(is_paused ? ICON_PLAYER_PLAY : ICON_PLAYER_PAUSE, NULL)))
+        is_paused ? emu_resume(emu) : emu_pause(emu);
+    GuiSetState(is_running & is_paused ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){anchor02.x + 176, anchor02.y + 16, 48, 24}, GuiIconText(ICON_PLAYER_NEXT, NULL)))
+        emu_step(emu);
+    GuiSetState(STATE_NORMAL);
+}
+
+void render_status_bar(emu_t *emu)
+{
+    const char *status_text = emu_is_running(emu) ? (emu_is_paused(emu) ? "PAUSED" : "RUNNING") : "STOPPED";
+    GuiStatusBar((Rectangle){8, 800, 1280, 24}, TextFormat("Status: %s | FPS: %d", status_text, GetFPS()));
+}
+
+void render_files()
+{
     GuiGroupBox((Rectangle){anchor03.x + 0, anchor03.y + 8, 152, 168}, "Files");
-    Button031Pressed = GuiButton((Rectangle){anchor03.x + 8, anchor03.y + 144, 64, 24}, "Save State");
-    Button032Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 144, 64, 24}, "Load State");
+    GuiButton((Rectangle){anchor03.x + 8, anchor03.y + 144, 64, 24}, "Save State");
+    GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 144, 64, 24}, "Load State");
     GuiLabel((Rectangle){anchor03.x + 8, anchor03.y + 16, 64, 24}, "Basic ROM");
     GuiLabel((Rectangle){anchor03.x + 8, anchor03.y + 48, 64, 24}, "Kernal ROM");
     GuiLabel((Rectangle){anchor03.x + 8, anchor03.y + 80, 64, 24}, "Chars ROM");
-    Button036Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 16, 64, 24}, "Load");
-    Button037Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 48, 64, 24}, "Load");
-    Button038Pressed = GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 80, 64, 24}, "Load");
-    Button039Pressed = GuiButton((Rectangle){anchor03.x + 8, anchor03.y + 112, 136, 24}, "Load Program .prg");
-    GuiGroupBox((Rectangle){anchor04.x + 0, anchor04.y + 0, 152, 592}, "Vic Registers");
-    char buf[16];
-    for (int16_t i = 0; i < 24; i++)
-    {
-        sprintf(buf, "%02X", i);
-        GuiLabel((Rectangle){anchor04.x + 8,  anchor04.y + 8 + (24 * i), 32, 24}, buf);
-        sprintf(buf, "%02X", emu_read_vic(emu, i));
-        if (GuiTextBox((Rectangle){anchor04.x + 40, anchor04.y + 8 + (24 * i), 32, 24}, buf, 128, vic_reg_edit))
-            vic_reg_edit = !vic_reg_edit;
-    }
-    for (int16_t i = 0; i < 23; i++)
-    {
-        sprintf(buf, "%02X", 24 + i);
-        GuiLabel((Rectangle){anchor04.x + 80, anchor04.y + 8 + (24 * i), 32, 24}, buf);
-        sprintf(buf, "%02X", emu_read_vic(emu, i));
-        if (GuiTextBox((Rectangle){anchor04.x + 112, anchor04.y + 8 + (24 * i), 32, 24}, buf, 128, vic_reg_edit))
-            vic_reg_edit = !vic_reg_edit;
-    }
+    GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 16, 64, 24}, "Load");
+    GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 48, 64, 24}, "Load");
+    GuiButton((Rectangle){anchor03.x + 80, anchor03.y + 80, 64, 24}, "Load");
+    GuiButton((Rectangle){anchor03.x + 8, anchor03.y + 112, 136, 24}, "Load Program .prg");
+}
+
+void render_screen()
+{
+    GuiGroupBox((Rectangle){anchor06.x + 0, anchor06.y + 0, 832, 592}, "Screen");
+    GuiPanel((Rectangle){anchor06.x + 96, anchor06.y + 96, 640, 400}, NULL);
+}
+
+void render_memory_status()
+{
     GuiGroupBox((Rectangle){anchor05.x + 0, anchor05.y + 0, 280, 776}, "Memory");
     GuiLabel((Rectangle){anchor05.x + 8, anchor05.y + 8, 48, 24}, "Address");
     if (GuiTextBox((Rectangle){anchor05.x + 56, anchor05.y + 8, 48, 24}, txt_addrText, 128, txt_addrEditMode))
         txt_addrEditMode = !txt_addrEditMode;
-    btn_prevPressed = GuiButton((Rectangle){anchor05.x + 112, anchor05.y + 8, 48, 24}, "Prev");
-    btn_nextPressed = GuiButton((Rectangle){anchor05.x + 168, anchor05.y + 8, 48, 24}, "Next");
+    GuiButton((Rectangle){anchor05.x + 112, anchor05.y + 8, 48, 24}, "Prev");
+    GuiButton((Rectangle){anchor05.x + 168, anchor05.y + 8, 48, 24}, "Next");
     GuiPanel((Rectangle){anchor05.x + 8, anchor05.y + 40, 264, 728}, NULL);
-    GuiGroupBox((Rectangle){anchor06.x + 0, anchor06.y + 0, 832, 592}, "Screen");
-    GuiPanel((Rectangle){anchor06.x + 96, anchor06.y + 96, 640, 400}, NULL);
-    //----------------------------------------------------------------------------------
-
-    EndDrawing();
-    //----------------------------------------------------------------------------------
 }
 
-//------------------------------------------------------------------------------------
-// Controls Functions Definitions (local)
-//------------------------------------------------------------------------------------
+void render(emu_t *emu, Texture2D *tex)
+{
+    BeginDrawing();
+
+    ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+
+    render_cpu_registers();
+    render_files();
+    render_screen();
+    render_memory_status();
+
+    render_controls(emu);
+    render_vic_registers(emu);
+    render_status_bar(emu);
+
+    EndDrawing();
+}
