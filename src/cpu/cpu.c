@@ -284,7 +284,7 @@ bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
     cpu->pc += get_instruction_size(opcode);
 
     // Conta cicli base
-    cpu->current_instruction = get_cycles_count(opcode);
+    cpu->current_instruction = get_cycles_count(opcode) ;
     cpu->cycles ++;
     
     // Esegui

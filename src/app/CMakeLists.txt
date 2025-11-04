@@ -1,5 +1,6 @@
 add_executable(cpt64
     main.c
+    layout.c
 )
 
 target_link_libraries(cpt64 PRIVATE

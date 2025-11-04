@@ -142,14 +142,14 @@ void vic_tick(vic_t *vic, c64_bus_t *bus)
                 bus_trigger_cpu_irq(bus);
             }
         }
-    }
 
-    // Determina badline
-    uint8_t yscroll = vic->registers[0x11] & 0x07;
-    bool den = vic->registers[0x11] & 0x10;
-    vic->badline = den &&
-                   (vic->raster >= 48 && vic->raster <= 247) &&
-                   ((vic->raster & 0x07) == yscroll);
+        // Determina badline
+        uint8_t yscroll = vic->registers[0x11] & 0x07;
+        bool den = vic->registers[0x11] & 0x10;
+        vic->badline = den &&
+                       (vic->raster >= 48 && vic->raster <= 247) &&
+                       ((vic->raster & 0x07) == yscroll);
+    }
 
     if (vic->cycle >= 14 && vic->cycle <= 53)
     {
@@ -181,15 +181,15 @@ void vic_tick(vic_t *vic, c64_bus_t *bus)
             uint32_t bg_color = to_raylib_color(palette[vic->registers[0x21] & 0x0F]);
 
             // Coordinate framebuffer
-            int screen_x = char_index * 8;
-            int screen_y = vic->raster - 48;
+            uint16_t screen_x = char_index * 8;
+            uint16_t screen_y = vic->raster - 48;
 
             if (screen_y >= 0 && screen_y < 200)
             {
                 // Renderizza 8 pixel
-                for (int pixel = 0; pixel < 8; pixel++)
+                for (uint8_t pixel = 0; pixel < 8; pixel++)
                 {
-                    int pixel_x = screen_x + pixel;
+                    uint16_t pixel_x = screen_x + pixel;
 
                     if (pixel_x < 320)
                     {
