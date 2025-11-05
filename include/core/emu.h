@@ -44,6 +44,9 @@ uint8_t emu_get_x(emu_t *emu);
 uint8_t emu_get_y(emu_t *emu);
 uint8_t emu_get_sp(emu_t *emu);
 uint8_t emu_get_status(emu_t *emu);
+void emu_get_interrupt(emu_t *emu, char *irq);
+void emu_get_flags(emu_t *emu, char *flags);
+uint64_t emu_get_cycle(emu_t *emu);
 const char* emu_get_current_instruction(emu_t *emu);
 uint8_t emu_read_memory(emu_t *emu, uint16_t addr);
 uint32_t *emu_get_framebuffer(emu_t *emu);  // Ritorna texture 320x200 del C64

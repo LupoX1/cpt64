@@ -148,38 +148,82 @@ void emu_reset(emu_t *emu)
 // Informazioni stato
 uint16_t emu_get_pc(emu_t *emu)
 {
-    (void)emu;
-    return 0x356D;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+    return cpu_get_pc(cpu);
 }
 
 uint8_t emu_get_a(emu_t *emu)
 {
-    (void)emu;
-    return 0x6D;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+    return cpu_get_a(cpu);
 }
 
 uint8_t emu_get_x(emu_t *emu)
 {
-    (void)emu;
-    return 0x7D;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+    return cpu_get_x(cpu);
 }
 
 uint8_t emu_get_y(emu_t *emu)
 {
-    (void)emu;
-    return 0x6E;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+    return cpu_get_y(cpu);
 }
 
 uint8_t emu_get_sp(emu_t *emu)
 {
-    (void)emu;
-    return 0x7E;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+    return cpu_get_sp(cpu);
 }
 
 uint8_t emu_get_status(emu_t *emu)
 {
-    (void)emu;
-    return 0x14;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+    return cpu_get_sr(cpu);
+}
+
+void emu_get_interrupt(emu_t *emu, char *irq)
+{
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+
+    if(cpu_reset_pending(cpu)) 
+    { irq[0] = 'R'; irq[1] = 'S'; irq[2] = 'T'; }
+    else  { irq[0] = '-'; irq[1] = '-'; irq[2] = '-'; }
+    irq[3] = ' ';
+    if(cpu_nmi_pending(cpu)) { irq[4] = 'N'; irq[5] = 'M'; irq[6] = 'I'; }
+    else { irq[4] = '-'; irq[5] = '-'; irq[6] = '-'; }
+    irq[7] = ' ';
+    if(cpu_irq_pending(cpu)) { irq[8] = 'I'; irq[9] = 'R'; irq[10] = 'Q'; }
+    else { irq[8] = '-'; irq[9] = '-'; irq[10] = '-'; }
+    irq[11] = 0;
+}
+
+void emu_get_flags(emu_t *emu, char *flags)
+{
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    cpu_t *cpu = bus_get_cpu(bus);
+
+    flags[0] = cpu_get_flag(cpu, FLAG_N) ? 'N' : 'n';
+    flags[1] = cpu_get_flag(cpu, FLAG_V) ? 'V' : 'v';
+    flags[2] = '-';
+    flags[3] = cpu_get_flag(cpu, FLAG_B) ? 'B' : 'b';
+    flags[4] = cpu_get_flag(cpu, FLAG_D) ? 'D' : 'd';
+    flags[5] = cpu_get_flag(cpu, FLAG_I) ? 'I' : 'i';
+    flags[6] = cpu_get_flag(cpu, FLAG_Z) ? 'Z' : 'z';
+    flags[7] = cpu_get_flag(cpu, FLAG_C) ? 'C' : 'c';
+    flags[8] = 0;
+}
+
+uint64_t emu_get_cycle(emu_t *emu)
+{
+    return c64_get_cycles(emu->c64);
 }
 
 const char *emu_get_current_instruction(emu_t *emu)
@@ -190,9 +234,8 @@ const char *emu_get_current_instruction(emu_t *emu)
 
 uint8_t emu_read_memory(emu_t *emu, uint16_t addr)
 {
-    (void)emu;
-    (void)addr;
-    return 0x87;
+    c64_bus_t *bus = c64_get_bus(emu->c64);
+    return bus_read(bus, addr);
 }
 
 uint32_t *emu_get_framebuffer(emu_t *emu)

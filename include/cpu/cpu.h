@@ -57,4 +57,8 @@ uint8_t cpu_pop(cpu_t *, struct c64_bus *);
 
 void cpu_trigger_irq(cpu_t *cpu);
 
+bool cpu_reset_pending(cpu_t *cpu);
+bool cpu_nmi_pending(cpu_t *cpu);
+bool cpu_irq_pending(cpu_t *cpu);
+
 #endif // CPU_H

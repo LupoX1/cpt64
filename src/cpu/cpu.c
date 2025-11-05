@@ -291,6 +291,21 @@ bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
     return handler(cpu, bus, addr);
 }
 
+bool cpu_reset_pending(cpu_t *cpu)
+{
+    return cpu->int_pending & INT_RESET;
+}
+
+bool cpu_nmi_pending(cpu_t *cpu)
+{
+    return cpu->int_pending & INT_NMI;
+}
+
+bool cpu_irq_pending(cpu_t *cpu)
+{
+    return cpu->int_pending & INT_IRQ;
+}
+
 bool cpu_step(cpu_t *cpu, c64_bus_t *bus)
 {
     if(bus_badline(bus))
@@ -306,19 +321,19 @@ bool cpu_step(cpu_t *cpu, c64_bus_t *bus)
     }
 
     // Gestisci interrupt in ordine di priorità
-    if (cpu->int_pending & INT_RESET)
+    if (cpu_reset_pending(cpu))
     {
         handle_reset(cpu, bus);
         return true;
     }
 
-    if (cpu->int_pending & INT_NMI)
+    if (cpu_nmi_pending(cpu))
     {
         handle_nmi(cpu, bus);
         return true;
     }
 
-    if (cpu->int_pending & INT_IRQ)
+    if (cpu_irq_pending(cpu))
     {
         handle_irq(cpu, bus);
         return true;
