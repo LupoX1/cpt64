@@ -75,6 +75,8 @@ char txt_addrText[128] = "";
 
 bool vic_reg_edit[47];
 
+uint16_t mem_base_addr = 0x0000;
+
 void render_vic_registers(emu_t *emu)
 {
     GuiGroupBox((Rectangle){anchor04.x + 0, anchor04.y + 0, 152, 592}, "Vic Registers");
@@ -196,7 +198,7 @@ void render_screen(emu_t *emu, Texture2D *tex)
                    (Vector2){0, 0}, 0.0f, WHITE);
 }
 
-void render_memory_status()
+void render_memory_status_old()
 {
     GuiGroupBox((Rectangle){anchor05.x + 0, anchor05.y + 0, 280, 776}, "Memory");
     GuiLabel((Rectangle){anchor05.x + 8, anchor05.y + 8, 48, 24}, "Address");
@@ -207,6 +209,47 @@ void render_memory_status()
     GuiPanel((Rectangle){anchor05.x + 8, anchor05.y + 40, 264, 728}, NULL);
 }
 
+void render_memory_status(emu_t *emu)
+{
+    const int bytes_per_row = 16;
+    const int rows_per_page = 32;
+
+    GuiGroupBox((Rectangle){anchor05.x + 0, anchor05.y + 0, 280, 776}, "Memory");
+    GuiLabel((Rectangle){anchor05.x + 8, anchor05.y + 8, 48, 24}, "Address");
+
+    if (GuiTextBox((Rectangle){anchor05.x + 56, anchor05.y + 8, 48, 24}, txt_addrText, 128, txt_addrEditMode))
+        txt_addrEditMode = !txt_addrEditMode;
+
+    if (GuiButton((Rectangle){anchor05.x + 112, anchor05.y + 8, 48, 24}, "Prev"))
+        mem_base_addr -= bytes_per_row * rows_per_page;
+
+    if (GuiButton((Rectangle){anchor05.x + 168, anchor05.y + 8, 48, 24}, "Next"))
+        mem_base_addr += bytes_per_row * rows_per_page;
+
+    Rectangle panel = { anchor05.x + 8, anchor05.y + 40, 264, 728 };
+    GuiPanel(panel, NULL);
+
+    // === Dump inside the panel ===
+    int start_x = panel.x + 8;
+    int start_y = panel.y + 8;
+    int line_height = 20;
+
+    char linebuf[128];
+    for (int row = 0; row < rows_per_page; row++) {
+        uint16_t addr = mem_base_addr + row * bytes_per_row;
+        snprintf(linebuf, sizeof(linebuf), "%04X: ", addr);
+
+        // Hex dump
+        int len = strlen(linebuf);
+        for (int i = 0; i < bytes_per_row; i++) {
+            uint8_t val = emu_read_memory(emu, addr + i);
+            len += snprintf(linebuf + len, sizeof(linebuf) - len, "%02X ", val);
+        }
+
+        DrawText(linebuf, start_x, start_y + row * line_height, 10, DARKGRAY);
+    }
+}
+
 void render(emu_t *emu, Texture2D *tex)
 {
     BeginDrawing();
@@ -214,13 +257,12 @@ void render(emu_t *emu, Texture2D *tex)
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
     render_files();
-    render_memory_status();
 
     render_controls(emu);
-    
     render_screen(emu, tex);
     render_cpu_registers(emu);
     render_vic_registers(emu);
+    render_memory_status(emu);
     render_status_bar(emu);
 
     EndDrawing();

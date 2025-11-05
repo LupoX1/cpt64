@@ -11,7 +11,7 @@
 #include "cpu/instructions.h"
 #include "video/vic.h"
 
-#define WINDOW_WIDTH 1296
+#define WINDOW_WIDTH 1600
 #define WINDOW_HEIGHT 832
 
 #define C64_CLOCK_PAL        985248

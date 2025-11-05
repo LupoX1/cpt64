@@ -53,7 +53,11 @@ void app_main_loop(emu_t *emu)
 {
     InitWindow(emu->window_width, emu->window_height, emu->name);
     ClearWindowState(FLAG_VSYNC_HINT);
-    SetTargetFPS(0);
+    SetTargetFPS(50);
+
+    //Font font = GetFontDefault();
+    //GenTextureMipmaps(&font.texture);
+    //SetTextureFilter(font.texture, TEXTURE_FILTER_TRILINEAR);
 
     log_info("GUI initialized successfully with raylib + raygui");
 
