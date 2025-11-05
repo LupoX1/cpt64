@@ -40,10 +40,9 @@ static void print_cpu_state(c64_system_t *c64)
     printf("  Cycles: %lu\n", state.cycles);
     
     // Mostra memoria intorno a PC
-    memory_t *mem = bus_get_ram(bus);
     printf("\nMemory at PC:\n  ");
     for (int i = 0; i < 16; i++) {
-        printf("%02X ", read_direct(mem, state.pc + i));
+        printf("%02X ", bus_read(bus, state.pc + i));
     }
     printf("\n");
 }
@@ -113,7 +112,7 @@ static bool run_functional_test(c64_system_t *c64)
         last_pc = current_pc;
         
         // Execute one instruction
-        if (!c64_step(c64)) {
+        if (!cpu_step(cpu, bus)) {
             printf("\n\nERROR: Execution failed at PC=$%04X\n", current_pc);
             print_cpu_state(c64);
             return false;
@@ -188,7 +187,7 @@ static bool run_interrupt_test(c64_system_t *c64)
         
         last_pc = current_pc;
         
-        if (!c64_step(c64)) {
+        if (!cpu_step(cpu, bus)) {
             printf("\n\nERROR: Execution failed\n");
             print_cpu_state(c64);
             return false;
