@@ -186,6 +186,21 @@ uint32_t *bus_get_framebuffer(c64_bus_t *bus)
     return vic_get_framebuffer(bus->vic);
 }
 
+
+uint8_t bus_read_vic(c64_bus_t *bus, uint16_t addr)
+{
+    // Il VIC vede il charset ROM a $1000-$1FFF quando in bank 0 o 2
+    // (corrisponde a $D000-$DFFF nel memory map della CPU)
+    if ((addr >= 0x1000 && addr < 0x2000) || 
+        (addr >= 0x9000 && addr < 0xA000)) {
+        uint16_t char_offset = addr & 0x0FFF;
+        return read_chargen(bus->mem, CHARGEN_ADDRESS + char_offset);
+    }
+    
+    // Per tutti gli altri indirizzi usa lettura normale
+    return read_direct(bus->mem, addr);
+}
+
 uint8_t bus_read_vic_internal(c64_bus_t *bus, uint8_t reg)
 {
     return vic_read_internal(bus->vic, reg);

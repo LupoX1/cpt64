@@ -168,7 +168,7 @@ void render_controls(emu_t *emu)
 void render_status_bar(emu_t *emu)
 {
     const char *status_text = emu_is_running(emu) ? (emu_is_paused(emu) ? "PAUSED" : "RUNNING") : "STOPPED";
-    GuiStatusBar((Rectangle){8, 800, 1280, 24}, TextFormat("Status: %s | FPS: %d", status_text, GetFPS()));
+    GuiStatusBar((Rectangle){8, 800, 1324, 24}, TextFormat("Status: %s | FPS: %d", status_text, GetFPS()));
 }
 
 void render_files()
@@ -214,7 +214,7 @@ void render_memory_status(emu_t *emu)
     const int bytes_per_row = 16;
     const int rows_per_page = 32;
 
-    GuiGroupBox((Rectangle){anchor05.x + 0, anchor05.y + 0, 280, 776}, "Memory");
+    GuiGroupBox((Rectangle){anchor05.x + 0, anchor05.y + 0, 324, 776}, "Memory");
     GuiLabel((Rectangle){anchor05.x + 8, anchor05.y + 8, 48, 24}, "Address");
 
     if (GuiTextBox((Rectangle){anchor05.x + 56, anchor05.y + 8, 48, 24}, txt_addrText, 128, txt_addrEditMode))
@@ -226,7 +226,7 @@ void render_memory_status(emu_t *emu)
     if (GuiButton((Rectangle){anchor05.x + 168, anchor05.y + 8, 48, 24}, "Next"))
         mem_base_addr += bytes_per_row * rows_per_page;
 
-    Rectangle panel = { anchor05.x + 8, anchor05.y + 40, 264, 728 };
+    Rectangle panel = { anchor05.x + 8, anchor05.y + 40, 308, 728 };
     GuiPanel(panel, NULL);
 
     // === Dump inside the panel ===

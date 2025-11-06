@@ -28,6 +28,8 @@ uint32_t *bus_get_framebuffer(c64_bus_t *);
 
 bool bus_badline(c64_bus_t *bus);
 
+// Lettura speciale per il VIC: accede al charset ROM quando necessario
+uint8_t bus_read_vic(c64_bus_t*, uint16_t);
 uint8_t bus_read_vic_internal(c64_bus_t *, uint8_t);
 
 #endif // C64_BUS_H
