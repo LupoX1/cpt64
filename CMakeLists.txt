@@ -61,6 +61,7 @@ add_subdirectory(src/core)
 add_subdirectory(src/cpu)
 add_subdirectory(src/memory)
 add_subdirectory(src/video)
+add_subdirectory(src/cia)
 add_subdirectory(src/log)
 
 add_subdirectory(src/app)

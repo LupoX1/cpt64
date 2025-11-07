@@ -13,4 +13,5 @@ target_link_libraries(core PUBLIC
     cpu
     memory
     video
+    cia
 )

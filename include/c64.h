@@ -10,6 +10,7 @@
 #include "cpu/opcodes.h"
 #include "cpu/instructions.h"
 #include "video/vic.h"
+#include "cia/cia.h"
 
 #define WINDOW_WIDTH 1340
 #define WINDOW_HEIGHT 832

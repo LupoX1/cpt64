@@ -26,7 +26,6 @@ target_include_directories(test_runner PRIVATE
 target_link_libraries(test_runner PRIVATE
     cpu
     memory
-    video
     log
 )
 

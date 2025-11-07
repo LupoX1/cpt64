@@ -6,7 +6,6 @@ struct c64_bus
 {
     cpu_t *cpu;
     memory_t *mem;
-    vic_t *vic;
 };
 
 c64_bus_t *bus_create()
@@ -28,13 +27,6 @@ c64_bus_t *bus_create()
         return NULL;
     }
 
-    bus->vic = vic_create();
-    if (!bus->vic)
-    {
-        bus_destroy(bus);
-        return NULL;
-    }
-
     return bus;
 }
 
@@ -44,7 +36,6 @@ void bus_destroy(c64_bus_t *bus)
         return;
     cpu_destroy(bus->cpu);
     memory_destroy(bus->mem);
-    vic_destroy(bus->vic);
     free(bus);
 }
 

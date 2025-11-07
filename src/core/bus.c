@@ -7,6 +7,8 @@ struct c64_bus
     cpu_t *cpu;
     memory_t *mem;
     vic_t *vic;
+    cia_t *cia1;
+    cia_t *cia2;
 };
 
 c64_bus_t *bus_create()
@@ -35,6 +37,20 @@ c64_bus_t *bus_create()
         return NULL;
     }
 
+    bus->cia1 = cia_create();
+    if(!bus->cia1)
+    {
+        bus_destroy(bus);
+        return NULL;
+    }
+
+    bus->cia2 = cia_create();
+    if(!bus->cia2)
+    {
+        bus_destroy(bus);
+        return NULL;
+    }
+
     return bus;
 }
 
@@ -45,6 +61,8 @@ void bus_destroy(c64_bus_t *bus)
     cpu_destroy(bus->cpu);
     memory_destroy(bus->mem);
     vic_destroy(bus->vic);
+    cia_destroy(bus->cia1);
+    cia_destroy(bus->cia2);
     free(bus);
 }
 
@@ -77,7 +95,10 @@ bool bus_clock(c64_bus_t *bus)
         return false;
 
     vic_tick(bus->vic, bus);
-    return cpu_step(bus->cpu, bus);
+    if(!cpu_step(bus->cpu, bus)) return false;
+    cia_tick(bus->cia1, bus);
+    cia_tick(bus->cia2, bus);
+    return true;
 }
 
 bool bus_badline(c64_bus_t *bus)
@@ -122,6 +143,8 @@ bool is_char_rom(memory_t *mem, uint16_t address)
 void bus_write_io(c64_bus_t *bus, uint16_t addr, uint8_t value)
 {
     if(addr >= VIC_ROM_ADDRESS && addr < (VIC_ROM_ADDRESS + VIC_ROM_SIZE)) vic_write(bus->vic, addr, value);
+    if(addr >= 0xDC00 && addr <= 0xDC0F) return cia_write(bus->cia1, addr, value);
+    if(addr >= 0xDD00 && addr <= 0xDD0F) return cia_write(bus->cia2, addr, value);
 
     write_direct(bus->mem, addr, value);
 }
@@ -136,24 +159,10 @@ void bus_write(c64_bus_t *bus, uint16_t addr, uint8_t value)
 uint8_t bus_read_io(c64_bus_t *bus, uint16_t addr)
 {
     if(addr >= VIC_ROM_ADDRESS && addr < (VIC_ROM_ADDRESS + VIC_ROM_SIZE)) return vic_read(bus->vic, addr);
-
-    switch (addr)
-    {
-    case 0xDC04:
-        return 0xFF; // CIA1 Timer A Low (fake: sempre scaduto)
-    case 0xDC05:
-        return 0xFF; // CIA1 Timer A High
-    case 0xDC0D:
-        return 0x00; // CIA1 ICR (nessun interrupt)
-    case 0xDC00:
-        return 0xFF; // CIA1 Port A (nessun tasto premuto)
-    case 0xDC01:
-        return 0xFF; // CIA1 Port B
-    case 0xDD00:
-        return 0xFF;
-    default:
-        return read_direct(bus->mem, addr);
-    }
+    if(addr >= 0xDC00 && addr <= 0xDC0F) return cia_read(bus->cia1, addr);
+    if(addr >= 0xDD00 && addr <= 0xDD0F) return cia_read(bus->cia2, addr);
+    
+    return read_direct(bus->mem, addr);
 }
 
 uint8_t bus_read(c64_bus_t *bus, uint16_t addr)
