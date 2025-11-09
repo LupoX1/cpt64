@@ -10,6 +10,22 @@ struct cia
     uint16_t latch_b;
     uint8_t ier;
     uint8_t registers[16];
+    uint8_t pra;    // PERIPHERAL DATA REG A
+    uint8_t prb;    // PERIPHERAL DATA REG B
+    uint8_t ddra;   // DATA DIRECTION REG A
+    uint8_t ddrb;   // DATA DIRECTION REG B
+    uint8_t talo;   // TIMER A LOW REGISTER
+    uint8_t tahi;   // TIMER A HIGH REGISTER
+    uint8_t tblo;   // TIMER B LOW REGISTER
+    uint8_t tbhi;   // TIMER B HIGH REGISTER
+    uint8_t todt;   // 10THS OF SECONDS REGISTER
+    uint8_t tods;   // SECONDS REGISTER
+    uint8_t todm;   // MINUTES REGISTER
+    uint8_t todh;   // HOURS – AM/PM REGISTER
+    uint8_t sdr;    // SERIAL DATA REGISTER
+    uint8_t icr;    // INTERRUPT CONTROL REGISTER
+    uint8_t cra;    // CONTROL REG A
+    uint8_t crb;    // CONTROL REG B 
 };
 
 cia_t *cia_create()

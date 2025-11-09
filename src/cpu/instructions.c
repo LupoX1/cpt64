@@ -272,7 +272,7 @@ instruction_t instruction_set[256] = {
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FF
 };
 
-addr_mode_t get_addressing_mode(uint8_t opcode)
+uint8_t get_addressing_mode(uint8_t opcode)
 {
     return instruction_set[opcode].mode;
 }
