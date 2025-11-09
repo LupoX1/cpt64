@@ -68,6 +68,7 @@ static inline uint32_t to_raylib_color(uint32_t color)
 // We'll read mem_read(0xDD00) directly.
 uint16_t vic_get_bank_base(vic_t *vic, c64_bus_t *bus)
 {
+    (void) vic;
     uint8_t cia2 = bus_read(bus, 0xDD00);
     uint8_t bank = 3 - (cia2 & 0x03);        // 0..3
     uint16_t base = (uint16_t)bank * 0x4000; // 16KB banks
@@ -112,7 +113,7 @@ vic_t *vic_create()
     vic->raster = 0;
     vic->cycle = 0;
     vic->badline = false;
-    memset(vic->registers, 0, 0x40);
+    memset(vic->registers, 0, sizeof(uint8_t) * 0x40);
     memset(vic->framebuffer, 0, VIC_FRAME_WIDTH * VIC_FRAME_HEIGHT);
 
     return vic;
@@ -359,6 +360,7 @@ char charset[64] = {
 
 void vic_log_screen(vic_t *vic, c64_bus_t *bus)
 {
+    (void) vic;
     char buf[41];
     uint8_t index = 0;
     for (uint16_t i = 0x0400; i < 0x07E9; i++)

@@ -93,7 +93,8 @@ void cpu_log(cpu_t *cpu, c64_bus_t *bus)
 
     uint8_t opcode = bus_read(bus, cpu->pc);
     char *instr_name = get_instruction_name(opcode);
-    addr_mode_t addr_mode = get_addressing_mode(opcode);
+    addr_mode_idx_t addr_mode_idx = get_addressing_mode_idx(opcode);
+    addr_mode_t addr_mode = get_addr_mode(addr_mode_idx);
     uint8_t size = get_instruction_size(opcode);
 
     if (!addr_mode)
@@ -268,7 +269,8 @@ bool cpu_execute_instruction(cpu_t *cpu, c64_bus_t *bus)
     uint8_t opcode = bus_read(bus, cpu->pc);
 
     // Decode
-    addr_mode_t addr_mode = get_addressing_mode(opcode);
+    addr_mode_idx_t addr_mode_idx = get_addressing_mode_idx(opcode);
+    addr_mode_t addr_mode = get_addr_mode(addr_mode_idx);
     opcode_t handler = get_opcode_handler(opcode);
 
     if (!handler)

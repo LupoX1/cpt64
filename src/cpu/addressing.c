@@ -3,25 +3,9 @@
 #include "memory/memory.h"
 #include "cpu/addressing.h"
 
-addr_mode_t modes[] =
-    {
-        NULL,
-        NULL,
-        NULL,
-        decode_address_immediate,
-        decode_address_absolute,
-        decode_address_absolute_x,
-        decode_address_absolute_y,
-        decode_address_zeropage,
-        decode_address_zeropage_x,
-        decode_address_zeropage_y,
-        decode_address_relative,
-        decode_address_indirect,
-        decode_address_indirect_x,
-        decode_address_indirect_y};
-
 uint16_t decode_address_immediate(cpu_t *cpu, c64_bus_t *bus)
 {
+    (void) bus;
     return cpu_get_pc(cpu) + 1;
 }
 
@@ -128,4 +112,26 @@ uint16_t decode_address_indirect_y(cpu_t *cpu, c64_bus_t *bus)
     if (((address ^ new_address) & 0xFF00) != 0)
         cpu_inc_cycles(cpu, 1);
     return new_address;
+}
+
+addr_mode_t modes[] =
+    {
+        NULL,
+        NULL,
+        NULL,
+        decode_address_immediate,
+        decode_address_absolute,
+        decode_address_absolute_x,
+        decode_address_absolute_y,
+        decode_address_zeropage,
+        decode_address_zeropage_x,
+        decode_address_zeropage_y,
+        decode_address_relative,
+        decode_address_indirect,
+        decode_address_indirect_x,
+        decode_address_indirect_y};
+
+addr_mode_t get_addr_mode(addr_mode_idx_t idx)
+{
+    return modes[idx];
 }

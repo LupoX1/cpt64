@@ -7,7 +7,7 @@
 typedef struct
 {
     opcode_t code;
-    addr_mode_t mode;
+    addr_mode_idx_t mode;
     char name[4];
     uint8_t cycles;
     uint8_t size;
@@ -272,7 +272,7 @@ instruction_t instruction_set[256] = {
     {.code = bad, .mode = N_D, .name = "bad", .cycles = 0, .size = 0}, // FF
 };
 
-uint8_t get_addressing_mode(uint8_t opcode)
+addr_mode_idx_t get_addressing_mode_idx(uint8_t opcode)
 {
     return instruction_set[opcode].mode;
 }
